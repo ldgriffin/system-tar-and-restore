@@ -23,3 +23,30 @@ else:
     from tkinter.scrolledtext import ScrolledText as tkScrolledText
 
 
+class STAR_GUI(ttk.Frame):
+    def __init__(self, parent):
+        # In Python 2 we can't use super() because the Tkinter objects derive
+        # from old-style classes. In Python 3 using "ttk.Frame.__init__()"
+        # seems to work ok, but better be safe than sorry :P
+        if PY_VERSION < 3:
+            ttk.Frame.__init__(self, parent)
+        else:
+            super(Backup, self).__init__(parent)
+
+        # set theming
+        self.style = ttk.Style()
+        self.style.theme_use("default")
+        self.pack(fill="both", expand=1)
+
+
+def main():
+    root = tk.Tk()
+    root.title("System Tar And Restore")
+    app = STAR_GUI(root)
+    app.update()
+    root.minsize(root.winfo_width(), root.winfo_height())
+    root.mainloop()
+
+
+if __name__ == '__main__':
+    main()
