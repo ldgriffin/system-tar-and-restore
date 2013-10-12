@@ -97,6 +97,18 @@ class FormLayoutMixin(object):
         box.grid(row=row, column=column + 1, sticky="nsew")
 
 
+class NotebookTab(ttk.Frame, FormLayoutMixin):
+    def __init__(self, parent):
+        # In Python 2 we can't use super() because the Tkinter objects derive
+        # from old-style classes. In Python 3 using "ttk.Frame.__init__()"
+        # seems to work ok, but better be safe than sorry :P
+        if PY_VERSION < 3:
+            ttk.Frame.__init__(self, parent)
+        else:
+            super(Backup, self).__init__(parent)
+        self.parent = parent
+
+
 class STAR_GUI(ttk.Frame, FormLayoutMixin):
     def __init__(self, parent):
         # In Python 2 we can't use super() because the Tkinter objects derive
