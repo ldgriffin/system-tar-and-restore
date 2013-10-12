@@ -66,13 +66,13 @@ class FormLayoutMixin(object):
         entry.grid(row=row, column=column + 1, sticky="nsew")
         button.grid(row=row, column=column + 2, sticky="nsew")
 
-    def add_directory_choice(self, row, label, variable, *args, **kwargs):
+    def add_choose_directory(self, row, label, variable, *args, **kwargs):
         callback = lambda: variable.set(filedialog.askdirectory())
         self.add_entry_with_button(row=row, label=label, variable=variable,
                                    state="readonly", bt_text="...",
                                    callback=callback, *args, **kwargs)
 
-    def add_filename_to_open_choice(self, row, label, variable, multiple=False, *args, **kwargs):
+    def add_open_filename(self, row, label, variable, multiple=False, *args, **kwargs):
         if multiple:
             callback = lambda: variable.set(filedialog.askopenfilenames())
         else:
@@ -81,7 +81,7 @@ class FormLayoutMixin(object):
                                    state="readonly", bt_text="...",
                                    callback=callback, *args, **kwargs)
 
-    def add_filename_to_saveas_choice(self, row, label, variable, *args, **kwargs):
+    def add_saveas_filename(self, row, label, variable, *args, **kwargs):
         callback = lambda: variable.set(filedialog.asksaveasfilename())
         self.add_entry_with_button(row=row, label=label, variable=variable,
                                    state="readonly", bt_text="...",
@@ -106,6 +106,7 @@ class STAR_GUI(ttk.Frame, FormLayoutMixin):
             ttk.Frame.__init__(self, parent)
         else:
             super(Backup, self).__init__(parent)
+        self.parent = parent
 
         # set theming
         self.style = ttk.Style()
@@ -122,6 +123,7 @@ class Test(ttk.Frame, FormLayoutMixin):
             ttk.Frame.__init__(self, parent)
         else:
             super(Backup, self).__init__(parent)
+        self.parent = parent
 
         # set theming
         self.style = ttk.Style()
@@ -129,10 +131,10 @@ class Test(ttk.Frame, FormLayoutMixin):
         self.pack(fill="both", expand=1)
 
         self.add_entry(1, "fdsa", tk.StringVar())
-        self.add_directory_choice(2, "asdf", tk.StringVar())
-        self.add_filename_to_open_choice(3, "asdf", tk.StringVar())
-        self.add_filename_to_open_choice(4, "asdf", tk.StringVar(), multiple=True)
-        self.add_filename_to_saveas_choice(5, "asdf", tk.StringVar())
+        self.add_choose_directory(2, "asdf", tk.StringVar())
+        self.add_open_filename(3, "asdf", tk.StringVar())
+        self.add_open_filename(4, "asdf", tk.StringVar(), multiple=True)
+        self.add_saveas_filename(5, "asdf", tk.StringVar())
         self.add_combobox(6, "combo", tk.StringVar(),
                           ["Include /home/*",
                            "Only include /home/* 's hidden files and folders",
