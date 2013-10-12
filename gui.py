@@ -186,6 +186,15 @@ class Test(ttk.Frame, FormLayoutMixin):
 def main():
     root = tk.Tk()
     root.title("System Tar And Restore")
+    app = BackupTab(root)
+    app.update()
+    root.minsize(root.winfo_width(), root.winfo_height())
+    root.mainloop()
+
+
+def test():
+    root = tk.Tk()
+    root.title("System Tar And Restore")
     app = Test(root)
     app.update()
     root.minsize(root.winfo_width(), root.winfo_height())
