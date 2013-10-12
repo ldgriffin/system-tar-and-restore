@@ -129,6 +129,23 @@ class BackupTab(NotebookTab):
             super(Backup, self).__init__(parent)
         self.parent = parent
 
+        # Create Tkinter Control Variables
+        # NOTE: You can't initialize their values here!
+        self.destination = tk.StringVar()
+        self.archiver = tk.StringVar()
+        self.compression = tk.StringVar()
+        self.home_folder = tk.StringVar()
+        self.additional_options = tk.StringVar()
+        self.command = tk.StringVar()
+
+        # Trace the Tkinter Control Variables!
+        # http://stackoverflow.com/a/6549535/592289
+        self.destination.trace("w", self.cb_gather_arguments)
+        self.archiver.trace("w", self.cb_gather_arguments)
+        self.compression.trace("w", self.cb_gather_arguments)
+        self.home_folder.trace("w", self.cb_gather_arguments)
+        self.additional_options.trace("w", self.cb_gather_arguments)
+
     def create_UI(self):
         pass
 
