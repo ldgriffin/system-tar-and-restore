@@ -108,6 +108,15 @@ class NotebookTab(ttk.Frame, FormLayoutMixin):
             super(Backup, self).__init__(parent)
         self.parent = parent
 
+    def create_UI(self, *args, **kwargs):
+        raise NotImplementedError("You must implemement in subclasses!")
+
+    def cb_gather_arguments(self, *args, **kwargs):
+        raise NotImplementedError("You must implemement in subclasses!")
+
+    def cb_execute_command(self, *args, **kwargs):
+        pass
+
 
 class BackupTab(NotebookTab):
     def __init__(self, parent):
