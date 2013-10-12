@@ -105,8 +105,14 @@ class NotebookTab(ttk.Frame, FormLayoutMixin):
         if PY_VERSION < 3:
             ttk.Frame.__init__(self, parent)
         else:
-            super(Backup, self).__init__(parent)
+            super(NotebookTab, self).__init__(parent)
         self.parent = parent
+
+        # set theming
+        self.style = ttk.Style()
+        self.style.theme_use("default")
+        self.pack(fill="both", expand=1)
+
 
     def create_UI(self, *args, **kwargs):
         raise NotImplementedError("You must implemement in subclasses!")
@@ -124,14 +130,14 @@ class BackupTab(NotebookTab):
         # from old-style classes. In Python 3 using "ttk.Frame.__init__()"
         # seems to work ok, but better be safe than sorry :P
         if PY_VERSION < 3:
-            ttk.Frame.__init__(self, parent)
+            NotebookTab.__init__(self, parent)
         else:
-            super(Backup, self).__init__(parent)
+            super(BackupTab, self).__init__(parent)
         self.parent = parent
 
         # Create Tkinter Control Variables
         # NOTE: You can't initialize their values here!
-        self.destination = tk.StringVar()
+        self.archive_filename = tk.StringVar()
         self.archiver = tk.StringVar()
         self.compression = tk.StringVar()
         self.home_folder = tk.StringVar()
@@ -140,15 +146,16 @@ class BackupTab(NotebookTab):
 
         # Trace the Tkinter Control Variables!
         # http://stackoverflow.com/a/6549535/592289
-        self.destination.trace("w", self.cb_gather_arguments)
+        self.archive_filename.trace("w", self.cb_gather_arguments)
         self.archiver.trace("w", self.cb_gather_arguments)
         self.compression.trace("w", self.cb_gather_arguments)
         self.home_folder.trace("w", self.cb_gather_arguments)
         self.additional_options.trace("w", self.cb_gather_arguments)
 
+        self.create_UI()
+
     def create_UI(self):
         pass
-
 
 class RestoreTab(NotebookTab):
     def __init__(self, parent):
@@ -156,9 +163,9 @@ class RestoreTab(NotebookTab):
         # from old-style classes. In Python 3 using "ttk.Frame.__init__()"
         # seems to work ok, but better be safe than sorry :P
         if PY_VERSION < 3:
-            ttk.Frame.__init__(self, parent)
+            NotebookTab.__init__(self, parent)
         else:
-            super(Backup, self).__init__(parent)
+            super(RestoreTab, self).__init__(parent)
         self.parent = parent
 
     def create_UI(self):
