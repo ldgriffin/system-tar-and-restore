@@ -27,16 +27,16 @@ else:
 class FormLayoutMixin(object):
     """ A Mixin class defining help methods for creating FormLayouts """
 
-    def add_entry(self, row, label, variable, column=1):
+    def add_entry(self, row, label, variable, state=None, column=1):
         """ This method adds a row with a `ttk.Label` and a `ttk.Entry`. """
         # create the widgets
         label = ttk.Label(self, text=label)
-        entry = ttk.Entry(self, textvariable=variable)
+        entry = ttk.Entry(self, textvariable=variable, state=state)
         # place the widgets
         label.grid(row=row, column=column + 0, sticky="nse")
         entry.grid(row=row, column=column + 1, sticky="nsew")
 
-    def add_entry_with_button(self, row, label, variable, state, bt_text, callback, width=None, column=1):
+    def add_entry_with_button(self, row, label, variable, bt_text, callback, state=None, width=None, column=1):
         """
         This method adds a row with a `ttk.Label`, a `ttk.Entry` and a `ttk.Button`.
 
@@ -48,9 +48,9 @@ class FormLayoutMixin(object):
         :param str label: The text of the Label widget.
         :param variable: A "tkinter control variable" linked with the
                          `ttk.Entry` widget.
-        :param str state: The state of the `ttk.Entry` widget.
         :param str bt_text: The text of the `ttk.Button`.
         :param callback: A python function binded to the `ttk.Button`.
+        :param str state: The state of the `ttk.Entry` widget. Defaults to `None`.
         :param int width: The width of the `ttk.Button`. Defaults to `None`
                           which means that it is not set.
         :param int column: The column index. Normally, it shouldn't be used.
