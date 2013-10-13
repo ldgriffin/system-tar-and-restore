@@ -96,6 +96,11 @@ class FormLayoutMixin(object):
         label.grid(row=row, column=column + 0, sticky="nse")
         box.grid(row=row, column=column + 1, sticky="nsew")
 
+    def add_scrolledtext(self, row, variable=None, column=1, *args, **kwargs):
+        """ Adds a tk ScrolledText. """
+        self.terminal = ScrolledText(self, variable=variable)
+        self.terminal.grid(row=row, column=column + 1, sticky="nsew")
+
 
 class NotebookTab(ttk.Frame, FormLayoutMixin):
     def __init__(self, parent):
