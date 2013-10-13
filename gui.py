@@ -113,7 +113,6 @@ class NotebookTab(ttk.Frame, FormLayoutMixin):
         self.style.theme_use("default")
         self.pack(fill="both", expand=1)
 
-
     def create_UI(self, *args, **kwargs):
         raise NotImplementedError("You must implemement in subclasses!")
 
@@ -122,6 +121,7 @@ class NotebookTab(ttk.Frame, FormLayoutMixin):
 
     def cb_execute_command(self, *args, **kwargs):
         pass
+
 
 
 class BackupTab(NotebookTab):
@@ -157,6 +157,7 @@ class BackupTab(NotebookTab):
     def create_UI(self):
         pass
 
+
 class RestoreTab(NotebookTab):
     def __init__(self, parent):
         # In Python 2 we can't use super() because the Tkinter objects derive
@@ -172,21 +173,35 @@ class RestoreTab(NotebookTab):
         pass
 
 
-class STAR_GUI(ttk.Frame, FormLayoutMixin):
-    def __init__(self, parent):
+class STAR_GUI(ttk.Frame):
+    def __init__(self, parent=None):
         # In Python 2 we can't use super() because the Tkinter objects derive
         # from old-style classes. In Python 3 using "ttk.Frame.__init__()"
         # seems to work ok, but better be safe than sorry :P
         if PY_VERSION < 3:
             ttk.Frame.__init__(self, parent)
         else:
-            super(Backup, self).__init__(parent)
+            super(STAR_GUI, self).__init__(parent)
         self.parent = parent
 
         # set theming
         self.style = ttk.Style()
         self.style.theme_use("default")
         self.pack(fill="both", expand=1)
+
+        # create the notebook
+        nb = ttk.Notebook(self, name='notebook')
+        nb.pack(fill="both", expand="Y", padx=2, pady=3)
+
+        # extend bindings to top level window allowing
+        #   CTRL+TAB - cycles thru tabs
+        #   SHIFT+CTRL+TAB - previous tab
+        #   ALT+K - select tab using mnemonic (K = underlined letter)
+        nb.enable_traversal()
+
+        # Add the tabs
+        nb.add(BackupTab(nb), text="Backup", underline=0)
+        nb.add(RestoreTab(nb), text="Restore", underline=0)
 
 
 class Test(ttk.Frame, FormLayoutMixin):
@@ -219,7 +234,7 @@ class Test(ttk.Frame, FormLayoutMixin):
 def main():
     root = tk.Tk()
     root.title("System Tar And Restore")
-    app = BackupTab(root)
+    app = STAR_GUI(root)
     app.update()
     root.minsize(root.winfo_width(), root.winfo_height())
     root.mainloop()
