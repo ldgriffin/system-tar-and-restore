@@ -138,6 +138,25 @@ class BackupTab(NotebookTab):
                         "Exclude /home/*"),
     }
 
+    ARGUMENTS = {
+        "Include /home/*": "",
+        "Only include /home/*'s hidden files and folders.": "-h",
+        "Exclude /home/*": "-h -n",
+        "gzip": "-c gzip",
+        "xz": "-c xz",
+        "tar": "-a tar",
+        "bsdtar": "-a bsdtar",
+        "": ""
+    }
+
+    def cb_gather_arguments(self, *args, **kwargs):
+        arguments = ["backup.sh", self.archive_filename.get()]
+        for variable in (self.archiver, self.compression, self.home_folder):
+            arguments.append(self.ARGUMENTS[variable.get()])
+        if self.additional_options.get():
+            arguments.append("'%s'" % self.additional_options.get())
+        self.command.set(" ".join(arguments))
+
     def __init__(self, parent):
         # In Python 2 we can't use super() because the Tkinter objects derive
         # from old-style classes. In Python 3 using "ttk.Frame.__init__()"
