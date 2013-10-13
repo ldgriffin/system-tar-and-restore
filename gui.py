@@ -125,6 +125,14 @@ class NotebookTab(ttk.Frame, FormLayoutMixin):
 
 
 class BackupTab(NotebookTab):
+    COMBO_CHOICES = {
+        "archiver": ("tar", "bsdtar"),
+        "compression": ("gzip", "xz"),
+        "home_folder": ("Include /home/*",
+                        "Only include /home/*'s hidden files and folders.",
+                        "Exclude /home/*"),
+    }
+
     def __init__(self, parent):
         # In Python 2 we can't use super() because the Tkinter objects derive
         # from old-style classes. In Python 3 using "ttk.Frame.__init__()"
@@ -155,7 +163,13 @@ class BackupTab(NotebookTab):
         self.create_UI()
 
     def create_UI(self):
-        pass
+        self.add_saveas_filename(row=1, variable=self.archive_filename,
+                                 label="Choose archive's filename:")
+        self.add_combobox(row=2, label="Archiver:", variable=self.archiver, values=self.COMBO_CHOICES["archiver"])
+        self.add_combobox(row=3, label="Compression:", variable=self.compression, values=self.COMBO_CHOICES["compression"])
+        self.add_combobox(row=4, label="/home/* directories:", variable=self.home_folder, values=self.COMBO_CHOICES["home_folder"])
+        self.add_entry(row=5, label="Additional archiver options:", variable=self.additional_options)
+        self.add_entry_with_button(row=6, label="Command:", variable=self.command, bt_text="Execute", callback=self.cb_execute_command)
 
 
 class RestoreTab(NotebookTab):
