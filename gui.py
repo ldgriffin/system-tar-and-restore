@@ -175,6 +175,7 @@ class BackupTab(NotebookTab):
         self.add_combobox(row=4, label="/home/* directories:", variable=self.home_folder, values=self.COMBO_CHOICES["home_folder"])
         self.add_entry(row=5, label="Additional archiver options:", variable=self.additional_options)
         self.add_entry_with_button(row=6, label="Command:", variable=self.command, bt_text="Execute", callback=self.cb_execute_command)
+        self.add_scrolledtext(row=7)
 
 
 class RestoreTab(NotebookTab):
