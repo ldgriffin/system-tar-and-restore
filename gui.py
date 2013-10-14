@@ -9,6 +9,7 @@ from __future__ import absolute_import
 # Standard Library imports
 import sys
 import os
+import subprocess
 
 # cross-version compatibility
 PY_VERSION = sys.version_info.major
@@ -125,8 +126,22 @@ class NotebookTab(ttk.Frame, FormLayoutMixin):
         raise NotImplementedError("You must implemement in subclasses!")
 
     def cb_execute_command(self, *args, **kwargs):
-        pass
+        # Use local lookups to improve performance
+        terminal_insert = self.terminal.insert
+        terminal_yview_scroll = self.terminal.yview_scroll
+        terminal_update_idletasks = self.terminal.update_idletasks
 
+        try:
+            proc = subprocess.Popen(self.command.get(), stdout=subprocess.PIPE, shell=True)
+        except OSError:
+            pass
+        terminal_insert("end", "$ %s \n" % self.command.get())
+        for line in iter(proc.stdout.readline, ""):
+            terminal_insert("end", line)
+            terminal_yview_scroll(1, "unit")
+            terminal_update_idletasks()
+        terminal_insert("end", "\n")
+        terminal_yview_scroll(1, "unit")
 
 
 class BackupTab(NotebookTab):
