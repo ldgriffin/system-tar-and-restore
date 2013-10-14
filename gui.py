@@ -8,7 +8,7 @@ from __future__ import absolute_import
 
 # Standard Library imports
 import sys
-import functools
+import os
 
 # cross-version compatibility
 PY_VERSION = sys.version_info.major
@@ -183,6 +183,13 @@ class BackupTab(NotebookTab):
         self.compression.trace("w", self.cb_gather_arguments)
         self.home_folder.trace("w", self.cb_gather_arguments)
         self.additional_options.trace("w", self.cb_gather_arguments)
+
+        # Set default values to the Tkinter Variables
+        self.archive_filename.set(os.path.expandvars("$HOME"))
+        self.archiver.set("tar")
+        self.compression.set("gzip")
+        self.home_folder.set(self.COMBO_CHOICES["home_folder"][0])
+        self.additional_options.set("")
 
         self.create_UI()
 
