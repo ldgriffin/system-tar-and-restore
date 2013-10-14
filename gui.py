@@ -203,6 +203,8 @@ class BackupTab(NotebookTab):
         self.add_entry_with_button(row=6, label="Command:", variable=self.command, bt_text="Execute", callback=self.cb_execute_command)
         self.add_scrolledtext(row=7)
 
+        self.columnconfigure(2, weight=1)
+        self.rowconfigure(7, weight=1)
 
 class RestoreTab(NotebookTab):
     def __init__(self, parent):
