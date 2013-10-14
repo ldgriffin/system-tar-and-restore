@@ -139,14 +139,14 @@ class BackupTab(NotebookTab):
     }
 
     ARGUMENTS = {
-        "Include /home/*": "",
-        "Only include /home/*'s hidden files and folders.": "-h",
-        "Exclude /home/*": "-h -n",
+        "Yes, include /home/*": "",
+        "Only include /home/*'s hidden files and directories.": "-h",
+        "No, exclude /home/*": "-h -n",
         "gzip": "-c gzip",
         "xz": "-c xz",
         "tar": "-a tar",
         "bsdtar": "-a bsdtar",
-        "": ""
+        "": "",
     }
 
     def cb_gather_arguments(self, *args, **kwargs):
