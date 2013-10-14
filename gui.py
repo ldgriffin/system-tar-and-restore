@@ -130,6 +130,8 @@ class NotebookTab(ttk.Frame, FormLayoutMixin):
 
 
 class BackupTab(NotebookTab):
+    SCRIPT_NAME = "backup.sh"
+
     COMBO_CHOICES = {
         "archiver": ("tar", "bsdtar"),
         "compression": ("gzip", "xz"),
@@ -148,14 +150,6 @@ class BackupTab(NotebookTab):
         "bsdtar": "-a bsdtar",
         "": "",
     }
-
-    def cb_gather_arguments(self, *args, **kwargs):
-        arguments = ["backup.sh", self.archive_filename.get()]
-        for variable in (self.archiver, self.compression, self.home_folder):
-            arguments.append(self.ARGUMENTS[variable.get()])
-        if self.additional_options.get():
-            arguments.append("'%s'" % self.additional_options.get())
-        self.command.set(" ".join(arguments))
 
     def __init__(self, parent):
         # In Python 2 we can't use super() because the Tkinter objects derive
@@ -206,7 +200,18 @@ class BackupTab(NotebookTab):
         self.columnconfigure(2, weight=1)
         self.rowconfigure(7, weight=1)
 
+    def cb_gather_arguments(self, *args, **kwargs):
+        arguments = [self.SCRIPT_NAME, "-d", self.archive_filename.get()]
+        for variable in (self.archiver, self.compression, self.home_folder):
+            arguments.append(self.ARGUMENTS[variable.get()])
+        if self.additional_options.get():
+            arguments.append("'%s'" % self.additional_options.get())
+        self.command.set(" ".join(arguments))
+
+
 class RestoreTab(NotebookTab):
+    SCRIPT_NAME = "restore.sh"
+
     def __init__(self, parent):
         # In Python 2 we can't use super() because the Tkinter objects derive
         # from old-style classes. In Python 3 using "ttk.Frame.__init__()"
