@@ -185,7 +185,7 @@ class BackupTab(NotebookTab):
 
         # Create Tkinter Control Variables
         # NOTE: You can't initialize their values here!
-        self.archive_filename = tk.StringVar()
+        self.archive_directory = tk.StringVar()
         self.archiver = tk.StringVar()
         self.compression = tk.StringVar()
         self.home_folder = tk.StringVar()
@@ -194,14 +194,14 @@ class BackupTab(NotebookTab):
 
         # Trace the Tkinter Control Variables!
         # http://stackoverflow.com/a/6549535/592289
-        self.archive_filename.trace("w", self.cb_gather_arguments)
+        self.archive_directory.trace("w", self.cb_gather_arguments)
         self.archiver.trace("w", self.cb_gather_arguments)
         self.compression.trace("w", self.cb_gather_arguments)
         self.home_folder.trace("w", self.cb_gather_arguments)
         self.additional_options.trace("w", self.cb_gather_arguments)
 
         # Set default values to the Tkinter Variables
-        self.archive_filename.set(os.path.expandvars("$HOME"))
+        self.archive_directory.set(os.path.expandvars("$HOME"))
         self.archiver.set("tar")
         self.compression.set("gzip")
         self.home_folder.set(self.COMBO_CHOICES["home_folder"][0])
@@ -210,7 +210,7 @@ class BackupTab(NotebookTab):
         self.create_UI()
 
     def create_UI(self):
-        self.add_choose_directory(row=1, variable=self.archive_filename, label="Choose destination directory:")
+        self.add_choose_directory(row=1, variable=self.archive_directory, label="Choose destination directory:")
         self.add_combobox(row=2, label="Archiver:", variable=self.archiver, values=self.COMBO_CHOICES["archiver"])
         self.add_combobox(row=3, label="Compression:", variable=self.compression, values=self.COMBO_CHOICES["compression"])
         self.add_combobox(row=4, label="Home directory:", variable=self.home_folder, values=self.COMBO_CHOICES["home_folder"])
@@ -222,7 +222,7 @@ class BackupTab(NotebookTab):
         self.rowconfigure(7, weight=1)
 
     def cb_gather_arguments(self, *args, **kwargs):
-        arguments = [self.SCRIPT_NAME, "-d", self.archive_filename.get()]
+        arguments = [self.SCRIPT_NAME, "-d", self.archive_directory.get()]
         for variable in (self.archiver, self.compression, self.home_folder):
             arguments.append(self.ARGUMENTS[variable.get()])
         if self.additional_options.get():
