@@ -230,11 +230,11 @@ class BackupTab(NotebookTab):
         self.rowconfigure(7, weight=1)
 
     def cb_gather_arguments(self, *args, **kwargs):
-        arguments = ["%s -d '%s'" % (self.SCRIPT_NAME, self.archive_directory.get())]
+        arguments = ['%s -d "%s"' % (self.SCRIPT_NAME, self.archive_directory.get())]
         for variable in (self.archiver, self.compression, self.home_folder):
             arguments.append(self.ARGUMENTS[variable.get()])
         if self.additional_options.get():
-            arguments.append("-u '%s'" % self.additional_options.get())
+            arguments.append('-u "%s"' % self.additional_options.get())
         self.command.set(" ".join(arguments))
 
 
