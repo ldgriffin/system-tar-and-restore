@@ -222,7 +222,7 @@ class BackupTab(NotebookTab):
         self.rowconfigure(7, weight=1)
 
     def cb_gather_arguments(self, *args, **kwargs):
-        arguments = [self.SCRIPT_NAME, "-d", self.archive_directory.get()]
+        arguments = ["%s -d '%s'" % (self.SCRIPT_NAME, self.archive_directory.get())]
         for variable in (self.archiver, self.compression, self.home_folder):
             arguments.append(self.ARGUMENTS[variable.get()])
         if self.additional_options.get():
@@ -232,6 +232,20 @@ class BackupTab(NotebookTab):
 
 class RestoreTab(NotebookTab):
     SCRIPT_NAME = "restore.sh"
+
+    COMBO_CHOICES = {
+        "archiver": ("tar", "bsdtar"),
+        "bootloader": ("grub", "syslinux"),
+    }
+
+    ARGUMENTS = {
+        "tar": "-a tar",
+        "bsdtar": "-a bsdtar",
+        "grub": "-g",
+        "syslinux": "-S",
+        "": "",
+    }
+
 
     def __init__(self, parent):
         # In Python 2 we can't use super() because the Tkinter objects derive
