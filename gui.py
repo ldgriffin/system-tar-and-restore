@@ -100,8 +100,9 @@ class FormLayoutMixin(object):
 
     def add_scrolledtext(self, row, variable=None, column=1, *args, **kwargs):
         """ Adds a tk ScrolledText. """
-        self.terminal = ScrolledText(self, variable=variable)
-        self.terminal.grid(row=row, column=column + 1, sticky="nsew")
+        scrolled_text = ScrolledText(self, variable=variable)
+        scrolled_text.grid(row=row, column=column + 1, sticky="nsew")
+        return scrolled_text
 
 
 class NotebookTab(ttk.Frame, FormLayoutMixin):
@@ -223,7 +224,7 @@ class BackupTab(NotebookTab):
         self.add_combobox(row=4, label="Home directory:", variable=self.home_folder, values=self.COMBO_CHOICES["home_folder"])
         self.add_entry(row=5, label="Additional archiver options:", variable=self.additional_options)
         self.add_entry_with_button(row=6, label="Command:", variable=self.command, bt_text="Execute", callback=self.cb_execute_command)
-        self.add_scrolledtext(row=7)
+        self.terminal = self.add_scrolledtext(row=7)
 
         self.columnconfigure(2, weight=1)
         self.rowconfigure(7, weight=1)
