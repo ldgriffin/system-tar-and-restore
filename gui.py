@@ -127,7 +127,7 @@ class NotebookTab(ttk.Frame, FormLayoutMixin):
         raise NotImplementedError("You must implemement in subclasses!")
 
     def cb_execute_command(self, *args, **kwargs):
-        command = "xterm -hold -e %s -i cli -q" % self.command.get()
+        command = "xterm -hold -e sudo %s -i cli -q" % self.command.get()
         subprocess.call(shlex.split(command))
 
         ## Use local lookups to improve performance
