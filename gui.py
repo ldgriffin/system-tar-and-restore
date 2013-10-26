@@ -9,6 +9,7 @@ from __future__ import absolute_import
 # Standard Library imports
 import sys
 import os
+import shlex
 import subprocess
 
 # cross-version compatibility
@@ -126,22 +127,28 @@ class NotebookTab(ttk.Frame, FormLayoutMixin):
         raise NotImplementedError("You must implemement in subclasses!")
 
     def cb_execute_command(self, *args, **kwargs):
-        # Use local lookups to improve performance
-        terminal_insert = self.terminal.insert
-        terminal_yview_scroll = self.terminal.yview_scroll
-        terminal_update_idletasks = self.terminal.update_idletasks
+        command = "xterm -hold -e %s -i cli -q" % self.command.get()
+        subprocess.call(shlex.split(command))
 
-        try:
-            proc = subprocess.Popen(self.command.get(), stdout=subprocess.PIPE, shell=True)
-        except OSError:
-            pass
-        terminal_insert("end", "$ %s \n" % self.command.get())
-        for line in iter(proc.stdout.readline, ""):
-            terminal_insert("end", line)
-            terminal_yview_scroll(1, "unit")
-            terminal_update_idletasks()
-        terminal_insert("end", "\n")
-        terminal_yview_scroll(1, "unit")
+        ## Use local lookups to improve performance
+        #terminal_insert = self.terminal.insert
+        #terminal_yview_scroll = self.terminal.yview_scroll
+        #terminal_update_idletasks = self.terminal.update_idletasks
+        #terminal_update = self.terminal.update
+
+
+        ##command = "tree /home/Prog"
+        #proc = subprocess.Popen(command.split(" ", 1), stdin=subprocess.PIPE, stdout=subprocess.PIPE, )
+        ##except OSError:
+            ##pass
+        #terminal_insert("end", "$ %s \n" % command)
+        #for line in iter(proc.stdout.readline, ""):
+            #terminal_insert("end", line)
+            #terminal_yview_scroll(1, "unit")
+            ##terminal_update_idletasks()
+            #terminal_update()
+        #terminal_insert("end", "\n")
+        #terminal_yview_scroll(1, "unit")
 
 
 class BackupTab(NotebookTab):
@@ -203,8 +210,7 @@ class BackupTab(NotebookTab):
         self.create_UI()
 
     def create_UI(self):
-        self.add_saveas_filename(row=1, variable=self.archive_filename,
-                                 label="Choose archive's filename:")
+        self.add_choose_directory(row=1, variable=self.archive_filename, label="Choose destination directory:")
         self.add_combobox(row=2, label="Archiver:", variable=self.archiver, values=self.COMBO_CHOICES["archiver"])
         self.add_combobox(row=3, label="Compression:", variable=self.compression, values=self.COMBO_CHOICES["compression"])
         self.add_combobox(row=4, label="Home directory:", variable=self.home_folder, values=self.COMBO_CHOICES["home_folder"])
@@ -220,7 +226,7 @@ class BackupTab(NotebookTab):
         for variable in (self.archiver, self.compression, self.home_folder):
             arguments.append(self.ARGUMENTS[variable.get()])
         if self.additional_options.get():
-            arguments.append("'%s'" % self.additional_options.get())
+            arguments.append("-u '%s'" % self.additional_options.get())
         self.command.set(" ".join(arguments))
 
 
