@@ -24,6 +24,19 @@ detect_filetype() {
   fi
 }
 
+detect_partition_table() {
+  if [[ "$BRsyslinux" == *md* ]]; then
+    BRsyslinuxdisk="$BRdev"
+  else
+    BRsyslinuxdisk="$BRsyslinux"
+  fi
+  if dd if="$BRsyslinuxdisk" skip=64 bs=8 count=1 2>/dev/null | grep -w "EFI PART" > /dev/null; then
+    BRpartitiontable="gpt"
+  else
+    BRpartitiontable="mbr"
+  fi
+}
+
 check_input() {
   if [ -n "$BRfile" ] && [ ! -f "$BRfile" ]; then
     echo -e "[${BR_RED}ERROR${BR_NORM}] File not found: $BRfile"
@@ -227,6 +240,14 @@ fi
   if [ "$BRarchiver" = "bsdtar" ] && [ -z $(which bsdtar 2> /dev/null) ]; then
     echo -e "[${BR_RED}ERROR${BR_NORM}] Package bsdtar is not installed. Install the package and re-run the script"
     BRSTOP="y"
+  fi
+
+  if [ -z "$BRgrub" ] && [ -z "$BRsyslinux" ] && [ -n "$BR_KERNEL_OPTS" ]; then
+    echo -e "[${BR_YELLOW}WARNING${BR_NORM}] No bootloader selected, skipping kernel options"
+  fi
+
+  if [ -n "$BRgrub" ] && [ -z "$BRsyslinux" ] && [ -n "$BR_KERNEL_OPTS" ]; then
+    echo -e "[${BR_YELLOW}WARNING${BR_NORM}] Grub selected, skipping kernel options"
   fi
 
   if [ -n "$BRSTOP" ]; then
@@ -472,10 +493,10 @@ fi
 
 check_input
 
-    if [ -n "$BRroot" ] && [ -z "$BRfile" ] && [ -z "$BRurl" ] && [ -z "$BRrestore" ]; then
-      echo -e "[${BR_YELLOW}WARNING${BR_NORM}] You must specify a backup file or enable transfer mode"
-      exit
-    fi
+if [ -n "$BRroot" ] && [ -z "$BRfile" ] && [ -z "$BRurl" ] && [ -z "$BRrestore" ]; then
+  echo -e "[${BR_YELLOW}WARNING${BR_NORM}] You must specify a backup file or enable transfer mode"
+  exit
+fi
 
 if [ "$BRmode" = "Transfer" ] && [ -z "$BRhidden" ]; then
   BRhidden="n"
@@ -483,7 +504,7 @@ fi
 
 PS3="Enter number or Q to quit: "
 
-if [ -n "$BRroot" ] || [ -n "$BRhome" ] || [ -n "$BRboot" ] || [ -n "$BRother" ] || [ -n "$BRrootsubvol" ] || [ -n "$BRsubvolother" ]; then
+if [ -n "$BRroot" ] || [ -n "$BRhome" ] || [ -n "$BRboot" ] || [ -n "$BRother" ] || [ -n "$BRrootsubvol" ] || [ -n "$BRsubvolother" ] || [ -n "$BRgrub" ] || [ -n "$BRsyslinux" ] || [ -n "$BR_KERNEL_OPTS" ]; then
   modelist=("Restore" "Transfer")
 elif [ -n "$BRarchiver" ]; then
   modelist=("Backup" "Restore" )
@@ -1142,19 +1163,6 @@ elif [ "$BRmode" = "Restore" ] || [ "$BRmode" = "Transfer" ] || [ "$BRmode" = "B
     fi
   }
 
-  detect_partition_table() {
-    if [[ "$BRsyslinux" == *md* ]]; then
-      BRsyslinuxdisk="$BRdev"
-    else
-      BRsyslinuxdisk="$BRsyslinux"
-    fi
-    if dd if="$BRsyslinuxdisk" skip=64 bs=8 count=1 2>/dev/null | grep -w "EFI PART" > /dev/null; then
-      BRpartitiontable="gpt"
-    else
-      BRpartitiontable="mbr"
-    fi
-  }
-
   set_syslinux_flags_and_paths() {
     if [ "$BRpartitiontable" = "gpt" ]; then
       echo "Setting legacy_boot flag on $BRdev$BRpart"
@@ -1792,14 +1800,6 @@ elif [ "$BRmode" = "Restore" ] || [ "$BRmode" = "Transfer" ] || [ "$BRmode" = "B
     if [ -z "$BRsubvolother" ]; then
       BRsubvolother="n"
     fi
-  fi
-
-  if [ "$BRgrub" = "-1" ] && [ "$BRsyslinux" = "-1" ] && [ -n "$BR_KERNEL_OPTS" ]; then
-    echo -e "[${BR_YELLOW}WARNING${BR_NORM}] No bootloader selected, skipping kernel options"
-  fi
-
-  if [ -n "$BRgrub" ] && [ -z "$BRsyslinux" ] && [ -n "$BR_KERNEL_OPTS" ]; then
-    echo -e "[${BR_YELLOW}WARNING${BR_NORM}] Grub selected, skipping kernel options"
   fi
 
   if [ -z "$(part_list_cli 2>/dev/null)" ]; then
