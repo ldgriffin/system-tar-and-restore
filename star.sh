@@ -14,6 +14,16 @@ color_variables() {
   BR_BOLD='\033[1m'
 }
 
+detect_filetype() {
+  if file "$BRfile" | grep -w gzip > /dev/null; then
+    BRfiletype="gz"
+  elif file "$BRfile" | grep -w XZ > /dev/null; then
+    BRfiletype="xz"
+  else
+    BRfiletype="wrong"
+  fi
+}
+
 check_input() {
   if [ -n "$BRfile" ] && [ ! -f "$BRfile" ]; then
     echo -e "[${BR_RED}ERROR${BR_NORM}] File not found: $BRfile"
@@ -1079,16 +1089,6 @@ elif [ "$BRmode" = "Restore" ] || [ "$BRmode" = "Transfer" ] || [ "$BRmode" = "B
   detect_root_fs_size() {
     BRfsystem=$(blkid -s TYPE -o value $BRroot)
     BRfsize=$(lsblk -d -n -o size 2> /dev/null $BRroot)
-  }
-
-  detect_filetype() {
-    if file "$BRfile" | grep -w gzip > /dev/null; then
-      BRfiletype="gz"
-    elif file "$BRfile" | grep -w XZ > /dev/null; then
-      BRfiletype="xz"
-    else
-      BRfiletype="wrong"
-    fi
   }
 
   detect_filetype_url() {
