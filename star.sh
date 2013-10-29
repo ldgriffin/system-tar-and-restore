@@ -14,6 +14,215 @@ color_variables() {
   BR_BOLD='\033[1m'
 }
 
+check_input() {
+  if [ -n "$BRfile" ] && [ ! -f "$BRfile" ]; then
+    echo -e "[${BR_RED}ERROR${BR_NORM}] File not found: $BRfile"
+    BRSTOP="y"
+  elif [ -n "$BRfile" ]; then
+    detect_filetype
+    if [ "$BRfiletype" = "wrong" ]; then
+      echo -e "[${BR_RED}ERROR${BR_NORM}] Invalid file type. File must be a gzip or xz compressed archive"
+      BRSTOP="y"
+    fi
+  fi
+
+  if [ -n "$BRfile" ] && [ -n "$BRurl" ]; then
+    echo -e "[${BR_YELLOW}WARNING${BR_NORM}] Dont use both local file and url at the same time"
+    BRSTOP="y"
+  fi
+
+  if [ -n "$BRfile" ] || [ -n "$BRurl" ] && [ -z "$BRarchiver" ]; then
+    echo -e "[${BR_YELLOW}WARNING${BR_NORM}] You must specify archiver"
+    BRSTOP="y"
+  fi
+
+  if [ -n "$BRfile" ] || [ -n "$BRurl" ] && [ -n "$BRrestore" ]; then
+    echo -e "[${BR_YELLOW}WARNING${BR_NORM}] Dont use local file / url and transfer mode at the same time"
+    BRSTOP="y"
+  fi
+
+  if [ "$BRmode" = "Transfer" ]; then
+    if [ -z $(which rsync 2> /dev/null) ];then
+      echo -e "[${BR_RED}ERROR${BR_NORM}] Package rsync is not installed. Install the package and re-run the script"
+      BRSTOP="y"
+    fi
+    if [ -n "$BRgrub" ] && [ ! -d /usr/lib/grub/i386-pc ]; then
+      echo -e "[${BR_RED}ERROR${BR_NORM}] Grub not found"
+      BRSTOP="y"
+    elif [ -n "$BRsyslinux" ] && [ -z $(which extlinux 2> /dev/null) ];then
+      echo -e "[${BR_RED}ERROR${BR_NORM}] Syslinux not found"
+      BRSTOP="y"
+    fi
+  fi
+
+  if [ -n "$BRhome" ] || [ -n "$BRboot" ] || [ -n "$BRother" ] || [ -n "$BRrootsubvol" ] || [ -n "$BRsubvolother" ] && [ -z "$BRroot" ]; then
+    echo -e "[${BR_RED}ERROR${BR_NORM}] You must specify a target root partition."
+    BRSTOP="y"
+  fi
+
+  if [ -n "$BRroot" ]; then
+    for i in $(find /dev -regex "/dev/[hs]d[a-z][0-9]+"); do if [[ $i == ${BRroot} ]] ; then BRrootcheck="true" ; fi; done
+    for i in $(find /dev/mapper/ | grep '-'); do if [[ $i == ${BRroot} ]] ; then BRrootcheck="true" ; fi; done
+    for i in $(find /dev -regex "^/dev/md[0-9]+$"); do if [[ $i == ${BRroot} ]] ; then BRrootcheck="true" ; fi; done
+    if [ ! "$BRrootcheck" = "true" ]; then
+      echo -e "[${BR_RED}ERROR${BR_NORM}] Wrong root partition: $BRroot"
+      BRSTOP="y"
+    elif pvdisplay 2>&1 | grep -w $BRroot > /dev/null; then
+      echo -e "[${BR_YELLOW}WARNING${BR_NORM}] $BRroot contains lvm physical volume, refusing to use it. Use a logical volume instead"
+      BRSTOP="y"
+    elif [[ ! -z `lsblk -d -n -o mountpoint 2> /dev/null $BRroot` ]]; then
+      echo -e "[${BR_YELLOW}WARNING${BR_NORM}] $BRroot is already mounted as $(lsblk -d -n -o mountpoint 2> /dev/null $BRroot), refusing to use it"
+      BRSTOP="y"
+    fi
+  fi
+
+  if [ -n "$BRswap" ]; then
+    for i in $(find /dev -regex "/dev/[hs]d[a-z][0-9]+"); do if [[ $i == ${BRswap} ]] ; then BRswapcheck="true" ; fi; done
+    for i in $(find /dev/mapper/ | grep '-'); do if [[ $i == ${BRswap} ]] ; then BRswapcheck="true" ; fi; done
+    for i in $(find /dev -regex "^/dev/md[0-9]+$"); do if [[ $i == ${BRswap} ]] ; then BRswapcheck="true" ; fi; done
+    if [ ! "$BRswapcheck" = "true" ]; then
+      echo -e "[${BR_RED}ERROR${BR_NORM}] Wrong swap partition: $BRswap"
+      BRSTOP="y"
+    elif pvdisplay 2>&1 | grep -w $BRswap > /dev/null; then
+      echo -e "[${BR_YELLOW}WARNING${BR_NORM}] $BRswap contains lvm physical volume, refusing to use it. Use a logical volume instead"
+      BRSTOP="y"
+    fi
+    if [ "$BRswap" == "$BRroot" ]; then
+      echo -e "[${BR_YELLOW}WARNING${BR_NORM}] $BRswap already used"
+      BRSTOP="y"
+    fi
+  fi
+
+  if [ "$BRcustom" = "y" ]; then
+    BRdevused=(`for i in ${BRcustomparts[@]}; do BRdevice=$(echo $i | cut -f2 -d"=") && echo $BRdevice; done | sort | uniq -d`)
+    BRmpointused=(`for i in ${BRcustomparts[@]}; do BRmpoint=$(echo $i | cut -f1 -d"=") && echo $BRmpoint; done | sort | uniq -d`)
+    if [ -n "$BRdevused" ]; then
+      for a in ${BRdevused[@]}; do
+        echo -e "[${BR_YELLOW}WARNING${BR_NORM}] $a already used"
+        BRSTOP="y"
+      done
+    fi
+    if [ -n "$BRmpointused" ]; then
+      for a in ${BRmpointused[@]}; do
+        echo -e "[${BR_YELLOW}WARNING${BR_NORM}] Duplicate mountpoint: $a"
+        BRSTOP="y"
+      done
+    fi
+
+    while read ln; do
+      BRmpoint=$(echo $ln | cut -f1 -d"=")
+      BRdevice=$(echo $ln | cut -f2 -d"=")
+
+      for i in $(find /dev -regex "/dev/[hs]d[a-z][0-9]+"); do if [[ $i == ${BRdevice} ]] ; then BRcustomcheck="true" ; fi; done
+      for i in $(find /dev/mapper/ | grep '-'); do if [[ $i == ${BRdevice} ]] ; then BRcustomcheck="true" ; fi; done
+      for i in $(find /dev -regex "^/dev/md[0-9]+$"); do if [[ $i == ${BRdevice} ]] ; then BRcustomcheck="true" ; fi; done
+      if [ ! "$BRcustomcheck" = "true" ]; then
+        echo -e "[${BR_RED}ERROR${BR_NORM}] Wrong $BRmpoint partition: $BRdevice"
+        BRSTOP="y"
+      elif pvdisplay 2>&1 | grep -w $BRdevice > /dev/null; then
+        echo -e "[${BR_YELLOW}WARNING${BR_NORM}] $BRdevice contains lvm physical volume, refusing to use it. Use a logical volume instead"
+        BRSTOP="y"
+      elif [[ ! -z `lsblk -d -n -o mountpoint 2> /dev/null $BRdevice` ]]; then
+        echo -e "[${BR_YELLOW}WARNING${BR_NORM}] $BRdevice is already mounted as $(lsblk -d -n -o mountpoint 2> /dev/null $BRdevice), refusing to use it"
+        BRSTOP="y"
+      fi
+      if [ "$BRdevice" == "$BRroot" ] || [ "$BRdevice" == "$BRswap" ]; then
+        echo -e "[${BR_YELLOW}WARNING${BR_NORM}] $BRdevice already used"
+        BRSTOP="y"
+      fi
+      if [ "$BRmpoint" = "/" ]; then
+        echo -e "[${BR_YELLOW}WARNING${BR_NORM}] Dont assign root partition as custom"
+        BRSTOP="y"
+      fi
+      if [ "$BRsubvolother" = "y" ]; then
+        for item in "${BRsubvols[@]}"; do
+          if [[ "$BRmpoint" == *"$item"* ]] && [[ "$item" == *"$BRmpoint"* ]]; then
+            echo -e "[${BR_YELLOW}WARNING${BR_NORM}] Dont use partitions inside btrfs subvolumes"
+            BRSTOP="y"
+          fi
+        done
+      fi
+      if [[ ! "$BRmpoint" == /* ]]; then
+        echo -e "[${BR_YELLOW}WARNING${BR_NORM}] Wrong mountpoint syntax: $BRmpoint"
+        BRSTOP="y"
+      fi
+      unset BRcustomcheck
+    done < <( for a in ${BRcustomparts[@]}; do BRmpoint=$(echo $a | cut -f1 -d"="); BRdevice=$(echo $a | cut -f2 -d"="); echo "$BRmpoint=$BRdevice"; done )
+  fi
+
+  if [ "$BRsubvolother" = "y" ]; then
+    BRsubvolused=(`for i in ${BRsubvols[@]}; do echo $i; done | sort | uniq -d`)
+    if [ -n "$BRsubvolused" ]; then
+      for a in ${BRsubvolused[@]}; do
+        echo -e "[${BR_YELLOW}WARNING${BR_NORM}] Duplicate subvolume: $a"
+        BRSTOP="y"
+      done
+    fi
+
+    while read ln; do
+      if [[ ! "$ln" == /* ]]; then
+        echo -e "[${BR_YELLOW}WARNING${BR_NORM}] Wrong subvolume syntax: $ln"
+        BRSTOP="y"
+      fi
+      if [ "$ln" = "/" ]; then
+        echo -e "[${BR_YELLOW}WARNING${BR_NORM}] Use -R to assign root subvolume"
+        BRSTOP="y"
+      fi
+    done < <( for a in ${BRsubvols[@]}; do echo $a; done )
+fi
+
+  if [ -n "$BRgrub" ]; then
+    for i in /dev/[hs]d[a-z]; do if [[ $i == ${BRgrub} ]] ; then BRgrubcheck="true" ; fi; done
+    for i in $(find /dev -regex "^/dev/md[0-9]+$"); do if [[ $i == ${BRgrub} ]] ; then BRgrubcheck="true" ; fi; done
+    if [ ! "$BRgrubcheck" = "true" ]; then
+      echo -e "[${BR_RED}ERROR${BR_NORM}] Wrong disk for grub: $BRgrub"
+      BRSTOP="y"
+    fi
+  fi
+
+  if [ -n "$BRsyslinux" ]; then
+    for i in /dev/[hs]d[a-z]; do if [[ $i == ${BRsyslinux} ]] ; then BRsyslinuxcheck="true" ; fi; done
+    for i in $(find /dev -regex "^/dev/md[0-9]+$"); do if [[ $i == ${BRsyslinux} ]] ; then BRsyslinuxcheck="true" ; fi; done
+    if [ ! "$BRsyslinuxcheck" = "true" ]; then
+      echo -e "[${BR_RED}ERROR${BR_NORM}] Wrong disk for syslinux: $BRsyslinux"
+      BRSTOP="y"
+    fi
+    if [[ "$BRsyslinux" == *md* ]]; then
+      for f in `cat /proc/mdstat | grep $(echo "$BRsyslinux" | cut -c 6-) | grep -oP '[hs]d[a-z][0-9]'` ; do
+        BRdev=`echo /dev/$f | cut -c -8`
+      done
+    fi
+    detect_partition_table
+    if [ "$BRpartitiontable" = "gpt" ] && [ -z $(which sgdisk 2> /dev/null) ]; then
+      echo -e "[${BR_RED}ERROR${BR_NORM}] Package gptfdisk/gdisk is not installed. Install the package and re-run the script"
+      BRSTOP="y"
+    fi
+  fi
+
+  if [ -n "$BRgrub" ] && [ -n "$BRsyslinux" ]; then
+    echo -e "[${BR_YELLOW}WARNING${BR_NORM}] Dont use both bootloaders at the same time"
+    BRSTOP="y"
+  fi
+
+  if [ -n "$BRinterface" ] && [ ! "$BRinterface" = "cli" ] && [ ! "$BRinterface" = "dialog" ]; then
+    echo -e "[${BR_RED}ERROR${BR_NORM}] Wrong interface name: $BRinterface. Available options: cli dialog"
+    BRSTOP="y"
+  fi
+
+  if [ -n "$BRarchiver" ] && [ ! "$BRarchiver" = "tar" ] && [ ! "$BRarchiver" = "bsdtar" ]; then
+    echo -e "[${BR_RED}ERROR${BR_NORM}] Wrong archiver: $BRarchiver. Available options: tar bsdtar"
+    BRSTOP="y"
+  fi
+
+  if [ "$BRarchiver" = "bsdtar" ] && [ -z $(which bsdtar 2> /dev/null) ]; then
+    echo -e "[${BR_RED}ERROR${BR_NORM}] Package bsdtar is not installed. Install the package and re-run the script"
+    BRSTOP="y"
+  fi
+
+  if [ -n "$BRSTOP" ]; then
+    exit
+  fi
+}
 
 BRargs=`getopt -o "I:d:C:u:enNa:qr:s:b:h:g:S:f:U:l:p:R:toNm:k:c:O:" -l "Interface:,destination:,Compression:,user-options:,exclude-home,no-hidden,no-color,archiver:,quiet,root:,swap:,boot:,home:,grub:,syslinux:,file:,url:,username:,password:,quiet,rootsubvolname:,transfer,only-hidden,no-color,mount-options:,kernel-options:,custom-partitions:,archiver:,other-subvolumes:,help" -n "$1" -- "$@"`
 
@@ -251,19 +460,12 @@ if [ -n "$BRbackup" ] && [ -n "$BRboth" ]; then
   exit
 fi
 
-if [ -n "$BRinterface" ] && [ ! "$BRinterface" = "cli" ] && [ ! "$BRinterface" = "dialog" ]; then
-  echo -e "[${BR_RED}ERROR${BR_NORM}] Wrong interface name: $BRinterface. Available options: cli dialog"
-  BRSTOP="y"
-fi
+check_input
 
-if [ -n "$BRarchiver" ] && [ ! "$BRarchiver" = "tar" ] && [ ! "$BRarchiver" = "bsdtar" ]; then
-  echo -e "[${BR_RED}ERROR${BR_NORM}] Wrong archiver: $BRarchiver. Available options: tar bsdtar"
-  BRSTOP="y"
-fi
-
-if [ -n "$BRSTOP" ]; then
-  exit
-fi
+    if [ -n "$BRroot" ] && [ -z "$BRfile" ] && [ -z "$BRurl" ] && [ -z "$BRrestore" ]; then
+      echo -e "[${BR_YELLOW}WARNING${BR_NORM}] You must specify a backup file or enable transfer mode"
+      exit
+    fi
 
 if [ "$BRmode" = "Transfer" ] && [ -z "$BRhidden" ]; then
   BRhidden="n"
@@ -1075,206 +1277,6 @@ elif [ "$BRmode" = "Restore" ] || [ "$BRmode" = "Transfer" ] || [ "$BRmode" = "B
     done
   }
 
-  check_input() {
-    if [ -n "$BRfile" ] && [ ! -f "$BRfile" ]; then
-      echo -e "[${BR_RED}ERROR${BR_NORM}] File not found: $BRfile"
-      BRSTOP="y"
-    elif [ -n "$BRfile" ]; then
-      detect_filetype
-      if [ "$BRfiletype" = "wrong" ]; then
-        echo -e "[${BR_RED}ERROR${BR_NORM}] Invalid file type. File must be a gzip or xz compressed archive"
-        BRSTOP="y"
-      fi
-    fi
-
-    if [ -n "$BRfile" ] && [ -n "$BRurl" ]; then
-      echo -e "[${BR_YELLOW}WARNING${BR_NORM}] Dont use both local file and url at the same time"
-      BRSTOP="y"
-    fi
-
-    if [ -n "$BRfile" ] || [ -n "$BRurl" ] && [ -z "$BRarchiver" ]; then
-      echo -e "[${BR_YELLOW}WARNING${BR_NORM}] You must specify archiver"
-      BRSTOP="y"
-    fi
-
-    if [ -n "$BRfile" ] || [ -n "$BRurl" ] && [ -n "$BRrestore" ]; then
-      echo -e "[${BR_YELLOW}WARNING${BR_NORM}] Dont use local file / url and transfer mode at the same time"
-      BRSTOP="y"
-    fi
-
-    if [ "$BRmode" = "Transfer" ]; then
-      if [ -z $(which rsync 2> /dev/null) ];then
-        echo -e "[${BR_RED}ERROR${BR_NORM}] Package rsync is not installed. Install the package and re-run the script"
-        BRSTOP="y"
-      fi
-      if [ -n "$BRgrub" ] && [ ! -d /usr/lib/grub/i386-pc ]; then
-        echo -e "[${BR_RED}ERROR${BR_NORM}] Grub not found"
-        BRSTOP="y"
-      elif [ -n "$BRsyslinux" ] && [ -z $(which extlinux 2> /dev/null) ];then
-        echo -e "[${BR_RED}ERROR${BR_NORM}] Syslinux not found"
-        BRSTOP="y"
-      fi
-    fi
-
-    if [ -n "$BRhome" ] || [ -n "$BRboot" ] || [ -n "$BRother" ] || [ -n "$BRrootsubvol" ] || [ -n "$BRsubvolother" ] && [ -z "$BRroot" ]; then
-      echo -e "[${BR_RED}ERROR${BR_NORM}] You must specify a target root partition."
-      BRSTOP="y"
-    fi
-
-    if [ -n "$BRroot" ]; then
-      for i in $(find /dev -regex "/dev/[hs]d[a-z][0-9]+"); do if [[ $i == ${BRroot} ]] ; then BRrootcheck="true" ; fi; done
-      for i in $(find /dev/mapper/ | grep '-'); do if [[ $i == ${BRroot} ]] ; then BRrootcheck="true" ; fi; done
-      for i in $(find /dev -regex "^/dev/md[0-9]+$"); do if [[ $i == ${BRroot} ]] ; then BRrootcheck="true" ; fi; done
-      if [ ! "$BRrootcheck" = "true" ]; then
-        echo -e "[${BR_RED}ERROR${BR_NORM}] Wrong root partition: $BRroot"
-        BRSTOP="y"
-      elif pvdisplay 2>&1 | grep -w $BRroot > /dev/null; then
-        echo -e "[${BR_YELLOW}WARNING${BR_NORM}] $BRroot contains lvm physical volume, refusing to use it. Use a logical volume instead"
-        BRSTOP="y"
-      elif [[ ! -z `lsblk -d -n -o mountpoint 2> /dev/null $BRroot` ]]; then
-        echo -e "[${BR_YELLOW}WARNING${BR_NORM}] $BRroot is already mounted as $(lsblk -d -n -o mountpoint 2> /dev/null $BRroot), refusing to use it"
-        BRSTOP="y"
-      fi
-    fi
-
-    if [ -n "$BRswap" ]; then
-      for i in $(find /dev -regex "/dev/[hs]d[a-z][0-9]+"); do if [[ $i == ${BRswap} ]] ; then BRswapcheck="true" ; fi; done
-      for i in $(find /dev/mapper/ | grep '-'); do if [[ $i == ${BRswap} ]] ; then BRswapcheck="true" ; fi; done
-      for i in $(find /dev -regex "^/dev/md[0-9]+$"); do if [[ $i == ${BRswap} ]] ; then BRswapcheck="true" ; fi; done
-      if [ ! "$BRswapcheck" = "true" ]; then
-        echo -e "[${BR_RED}ERROR${BR_NORM}] Wrong swap partition: $BRswap"
-        BRSTOP="y"
-      elif pvdisplay 2>&1 | grep -w $BRswap > /dev/null; then
-        echo -e "[${BR_YELLOW}WARNING${BR_NORM}] $BRswap contains lvm physical volume, refusing to use it. Use a logical volume instead"
-        BRSTOP="y"
-      fi
-      if [ "$BRswap" == "$BRroot" ]; then
-        echo -e "[${BR_YELLOW}WARNING${BR_NORM}] $BRswap already used"
-        BRSTOP="y"
-      fi
-    fi
-
-    if [ "$BRcustom" = "y" ]; then
-      BRdevused=(`for i in ${BRcustomparts[@]}; do BRdevice=$(echo $i | cut -f2 -d"=") && echo $BRdevice; done | sort | uniq -d`)
-      BRmpointused=(`for i in ${BRcustomparts[@]}; do BRmpoint=$(echo $i | cut -f1 -d"=") && echo $BRmpoint; done | sort | uniq -d`)
-      if [ -n "$BRdevused" ]; then
-        for a in ${BRdevused[@]}; do
-          echo -e "[${BR_YELLOW}WARNING${BR_NORM}] $a already used"
-          BRSTOP="y"
-        done
-      fi
-      if [ -n "$BRmpointused" ]; then
-        for a in ${BRmpointused[@]}; do
-          echo -e "[${BR_YELLOW}WARNING${BR_NORM}] Duplicate mountpoint: $a"
-          BRSTOP="y"
-        done
-      fi
-
-      while read ln; do
-        BRmpoint=$(echo $ln | cut -f1 -d"=")
-        BRdevice=$(echo $ln | cut -f2 -d"=")
-
-        for i in $(find /dev -regex "/dev/[hs]d[a-z][0-9]+"); do if [[ $i == ${BRdevice} ]] ; then BRcustomcheck="true" ; fi; done
-        for i in $(find /dev/mapper/ | grep '-'); do if [[ $i == ${BRdevice} ]] ; then BRcustomcheck="true" ; fi; done
-        for i in $(find /dev -regex "^/dev/md[0-9]+$"); do if [[ $i == ${BRdevice} ]] ; then BRcustomcheck="true" ; fi; done
-        if [ ! "$BRcustomcheck" = "true" ]; then
-          echo -e "[${BR_RED}ERROR${BR_NORM}] Wrong $BRmpoint partition: $BRdevice"
-          BRSTOP="y"
-        elif pvdisplay 2>&1 | grep -w $BRdevice > /dev/null; then
-          echo -e "[${BR_YELLOW}WARNING${BR_NORM}] $BRdevice contains lvm physical volume, refusing to use it. Use a logical volume instead"
-          BRSTOP="y"
-        elif [[ ! -z `lsblk -d -n -o mountpoint 2> /dev/null $BRdevice` ]]; then
-          echo -e "[${BR_YELLOW}WARNING${BR_NORM}] $BRdevice is already mounted as $(lsblk -d -n -o mountpoint 2> /dev/null $BRdevice), refusing to use it"
-          BRSTOP="y"
-        fi
-        if [ "$BRdevice" == "$BRroot" ] || [ "$BRdevice" == "$BRswap" ]; then
-          echo -e "[${BR_YELLOW}WARNING${BR_NORM}] $BRdevice already used"
-          BRSTOP="y"
-        fi
-        if [ "$BRmpoint" = "/" ]; then
-          echo -e "[${BR_YELLOW}WARNING${BR_NORM}] Dont assign root partition as custom"
-          BRSTOP="y"
-        fi
-        if [ "$BRsubvolother" = "y" ]; then
-          for item in "${BRsubvols[@]}"; do
-            if [[ "$BRmpoint" == *"$item"* ]] && [[ "$item" == *"$BRmpoint"* ]]; then
-              echo -e "[${BR_YELLOW}WARNING${BR_NORM}] Dont use partitions inside btrfs subvolumes"
-              BRSTOP="y"
-            fi
-          done
-        fi
-        if [[ ! "$BRmpoint" == /* ]]; then
-          echo -e "[${BR_YELLOW}WARNING${BR_NORM}] Wrong mountpoint syntax: $BRmpoint"
-          BRSTOP="y"
-        fi
-        unset BRcustomcheck
-      done < <( for a in ${BRcustomparts[@]}; do BRmpoint=$(echo $a | cut -f1 -d"="); BRdevice=$(echo $a | cut -f2 -d"="); echo "$BRmpoint=$BRdevice"; done )
-    fi
-
-    if [ "$BRsubvolother" = "y" ]; then
-      BRsubvolused=(`for i in ${BRsubvols[@]}; do echo $i; done | sort | uniq -d`)
-      if [ -n "$BRsubvolused" ]; then
-        for a in ${BRsubvolused[@]}; do
-          echo -e "[${BR_YELLOW}WARNING${BR_NORM}] Duplicate subvolume: $a"
-          BRSTOP="y"
-        done
-      fi
-
-      while read ln; do
-        if [[ ! "$ln" == /* ]]; then
-          echo -e "[${BR_YELLOW}WARNING${BR_NORM}] Wrong subvolume syntax: $ln"
-          BRSTOP="y"
-        fi
-        if [ "$ln" = "/" ]; then
-          echo -e "[${BR_YELLOW}WARNING${BR_NORM}] Use -R to assign root subvolume"
-          BRSTOP="y"
-        fi
-      done < <( for a in ${BRsubvols[@]}; do echo $a; done )
-    fi
-
-    if [ -n "$BRgrub" ]; then
-      for i in /dev/[hs]d[a-z]; do if [[ $i == ${BRgrub} ]] ; then BRgrubcheck="true" ; fi; done
-      for i in $(find /dev -regex "^/dev/md[0-9]+$"); do if [[ $i == ${BRgrub} ]] ; then BRgrubcheck="true" ; fi; done
-      if [ ! "$BRgrubcheck" = "true" ]; then
-        echo -e "[${BR_RED}ERROR${BR_NORM}] Wrong disk for grub: $BRgrub"
-        BRSTOP="y"
-      fi
-    fi
-
-    if [ -n "$BRsyslinux" ]; then
-      for i in /dev/[hs]d[a-z]; do if [[ $i == ${BRsyslinux} ]] ; then BRsyslinuxcheck="true" ; fi; done
-      for i in $(find /dev -regex "^/dev/md[0-9]+$"); do if [[ $i == ${BRsyslinux} ]] ; then BRsyslinuxcheck="true" ; fi; done
-      if [ ! "$BRsyslinuxcheck" = "true" ]; then
-        echo -e "[${BR_RED}ERROR${BR_NORM}] Wrong disk for syslinux: $BRsyslinux"
-        BRSTOP="y"
-      fi
-      if [[ "$BRsyslinux" == *md* ]]; then
-        for f in `cat /proc/mdstat | grep $(echo "$BRsyslinux" | cut -c 6-) | grep -oP '[hs]d[a-z][0-9]'` ; do
-          BRdev=`echo /dev/$f | cut -c -8`
-        done
-      fi
-      detect_partition_table
-      if [ "$BRpartitiontable" = "gpt" ] && [ -z $(which sgdisk 2> /dev/null) ]; then
-        echo -e "[${BR_RED}ERROR${BR_NORM}] Package gptfdisk/gdisk is not installed. Install the package and re-run the script"
-        BRSTOP="y"
-      fi
-    fi
-
-    if [ -n "$BRgrub" ] && [ -n "$BRsyslinux" ]; then
-      echo -e "[${BR_YELLOW}WARNING${BR_NORM}] Dont use both bootloaders at the same time"
-      BRSTOP="y"
-    fi
-
-    if [ "$BRarchiver" = "bsdtar" ] && [ -z $(which bsdtar 2> /dev/null) ]; then
-      echo -e "[${BR_RED}ERROR${BR_NORM}] Package bsdtar is not installed. Install the package and re-run the script"
-      BRSTOP="y"
-    fi
-
-    if [ -n "$BRSTOP" ]; then
-      exit
-    fi
-  }
-
   mount_all() {
     echo -e "\n${BR_SEP}MOUNTING"
     echo -ne "${BR_WRK}Making working directory"
@@ -1783,11 +1785,6 @@ elif [ "$BRmode" = "Restore" ] || [ "$BRmode" = "Transfer" ] || [ "$BRmode" = "B
     if [ -z "$BRgrub" ] && [ -z "$BRsyslinux" ]; then
       BRgrub="-1"
       BRsyslinux="-1"
-    fi
-
-    if [ -z "$BRfile" ] && [ -z "$BRurl" ] && [ -z "$BRrestore" ]; then
-      echo -e "[${BR_YELLOW}WARNING${BR_NORM}] You must specify a backup file or enable transfer mode"
-      exit
     fi
   fi
 
