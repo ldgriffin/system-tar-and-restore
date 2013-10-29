@@ -138,6 +138,7 @@ while true; do
     -R|--rootsubvolname)
       BRrootsubvol="y"
       BRrootsubvolname=$2
+      BRmode="Both"
       BRboth="y"
       shift 2
     ;;
