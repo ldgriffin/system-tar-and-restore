@@ -271,23 +271,25 @@ fi
 
 PS3="Enter number or Q to quit: "
 
+if [ -n "$BRroot" ] || [ -n "$BRhome" ] || [ -n "$BRboot" ] || [ -n "$BRother" ] || [ -n "$BRrootsubvol" ] || [ -n "$BRsubvolother" ]; then
+  modelist=("Restore" "Transfer")
+elif [ -n "$BRarchiver" ]; then
+  modelist=("Backup" "Restore" )
+else
+  modelist=("Backup" "Restore" "Transfer")
+fi
+
 if [ -z "$BRmode" ]; then
   echo -e "\n${BR_CYAN}Select Mode:${BR_NORM}"
-  select c in "Backup" "Restore" "Transfer"; do
-    if [ $REPLY = "q" ] || [ $REPLY = "Q" ]; then
+  select c in ${modelist[@]}; do
+    if [ "$REPLY" = "q" ] || [ "$REPLY" = "Q" ]; then
       echo -e "${BR_YELLOW}Aborted by User${BR_NORM}"
       exit
-    elif [[ "$REPLY" = [0-9]* ]] && [ "$REPLY" -eq 1 ]; then
-      BRmode="Backup"
-      break
-    elif [[ "$REPLY" = [0-9]* ]] && [ "$REPLY" -eq 2 ]; then
-      BRmode="Restore"
-      break
-    elif [[ "$REPLY" = [0-9]* ]] && [ "$REPLY" -eq 3 ]; then
-      BRmode="Transfer"
+    elif [[ "$REPLY" = [0-9]* ]] && [ "$REPLY" -gt 0 ] && [ "$REPLY" -le ${#modelist[@]} ]; then
+      BRmode=(`echo $c | awk '{ print $1 }'`)
       break
     else
-      echo -e "${BR_RED}Please enter a valid option from the list${BR_NORM}"
+      echo -e "${BR_RED}Please select a valid option from the list${BR_NORM}"
     fi
   done
 fi
