@@ -336,7 +336,7 @@ class Test(ttk.Frame, FormLayoutMixin):
         self.add_saveas_filename(5, "asdf", tk.StringVar())
         self.add_combobox(6, "combo", tk.StringVar(),
                           ["Include /home/*",
-                           "Only include /home/* 's hidden files and folders",
+                           "Only include /home/* 's hidden files and directories",
                            "Exclude /home/*"])
 
 
