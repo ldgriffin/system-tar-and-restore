@@ -198,6 +198,7 @@ class BackupTab(NotebookTab):
         self.compression = tk.StringVar()
         self.home_folder = tk.StringVar()
         self.additional_options = tk.StringVar()
+        self.excluded_directories = tk.StringVar()
         self.command = tk.StringVar()
 
         # Trace the Tkinter Control Variables!
@@ -207,6 +208,7 @@ class BackupTab(NotebookTab):
         self.compression.trace("w", self.cb_gather_arguments)
         self.home_folder.trace("w", self.cb_gather_arguments)
         self.additional_options.trace("w", self.cb_gather_arguments)
+        self.excluded_directories.trace("w", self.cb_gather_arguments)
 
         # Set default values to the Tkinter Variables
         self.archive_directory.set(os.path.expandvars("$HOME"))
@@ -214,6 +216,7 @@ class BackupTab(NotebookTab):
         self.compression.set("gzip")
         self.home_folder.set(self.COMBO_CHOICES["home_folder"][0])
         self.additional_options.set("")
+        self.excluded_directories.set("")
 
         self.create_UI()
 
@@ -223,18 +226,28 @@ class BackupTab(NotebookTab):
         self.add_combobox(row=3, label="Compression:", variable=self.compression, values=self.COMBO_CHOICES["compression"])
         self.add_combobox(row=4, label="Home directory:", variable=self.home_folder, values=self.COMBO_CHOICES["home_folder"])
         self.add_entry(row=5, label="Additional archiver options:", variable=self.additional_options)
-        self.add_entry_with_button(row=6, label="Command:", variable=self.command, bt_text="Execute", callback=self.cb_execute_command)
-        self.terminal = self.add_scrolledtext(row=7)
+        self.add_entry(row=6, label="Excluded directories:", variable=self.excluded_directories)
+        self.add_entry_with_button(row=7, label="Command:", variable=self.command, bt_text="Execute", callback=self.cb_execute_command)
 
         self.columnconfigure(2, weight=1)
-        self.rowconfigure(7, weight=1)
 
     def cb_gather_arguments(self, *args, **kwargs):
         arguments = ['%s -d "%s"' % (self.SCRIPT_NAME, self.archive_directory.get())]
         for variable in (self.archiver, self.compression, self.home_folder):
             arguments.append(self.ARGUMENTS[variable.get()])
-        if self.additional_options.get():
-            arguments.append('-u "%s"' % self.additional_options.get())
+
+        additional_options = self.additional_options.get().strip()
+        if additional_options:
+            additional_options = " ".join(option for option in additional_options.split())
+
+        excluded_dirs = self.excluded_directories.get().strip()
+        if excluded_dirs:
+            excluded_dirs = " ".join("--exclude=%s" % directory for directory in excluded_dirs.split())
+
+        if additional_options or excluded_dirs:
+            sep = " " if additional_options and excluded_dirs else ""
+            arguments.append('-u "%s"' % sep.join((additional_options, excluded_dirs)))
+
         self.command.set(" ".join(arguments))
 
 
