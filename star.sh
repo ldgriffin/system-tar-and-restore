@@ -77,37 +77,31 @@ while true; do
     ;;
   -r|--root)
       BRroot=$2
-      BRmode="Both"
       BRboth="y"
       shift 2
     ;;
     -s|--swap)
       BRswap=$2
-      BRmode="Both"
       BRboth="y"
       shift 2
     ;;
     -b|--boot)
       BRboot=$2
-      BRmode="Both"
       BRboth="y"
       shift 2
     ;;
     -h|--home)
       BRhome=$2
-      BRmode="Both"
       BRboth="y"
       shift 2
     ;;
     -g|--grub)
       BRgrub=$2
-      BRmode="Both"
       BRboth="y"
       shift 2
     ;;
     -S|--syslinux)
       BRsyslinux=$2
-      BRmode="Both"
       BRboth="y"
       shift 2
     ;;
@@ -138,7 +132,6 @@ while true; do
     -R|--rootsubvolname)
       BRrootsubvol="y"
       BRrootsubvolname=$2
-      BRmode="Both"
       BRboth="y"
       shift 2
     ;;
@@ -157,13 +150,11 @@ while true; do
     -m|--mount-options)
       BRmountoptions="Yes"
       BR_MOUNT_OPTS=$2
-      BRmode="Both"
       BRboth="y"
       shift 2
     ;;
     -k|--kernel-options)
       BR_KERNEL_OPTS=$2
-      BRmode="Both"
       BRboth="y"
       shift 2
     ;;
@@ -172,7 +163,6 @@ while true; do
       BRother="y"
       BRcustomparts=($2)
       BRcustomold="$2"
-      BRmode="Both"
       BRboth="y"
       shift 2
     ;;
@@ -183,7 +173,6 @@ while true; do
     -O|--other-subvolumes)
       BRsubvolother="y"
       BRsubvols=($2)
-      BRmode="Both"
       BRboth="y"
       shift 2
     ;;
@@ -301,29 +290,6 @@ if [ -z "$BRmode" ]; then
       echo -e "${BR_RED}Please enter a valid option from the list${BR_NORM}"
     fi
   done
-fi
-
-if [ -z "$BRinterface" ]; then
-  echo -e "\n${BR_CYAN}Select interface:${BR_NORM}"
-  select c in "CLI" "Dialog"; do
-    if [ $REPLY = "q" ] || [ $REPLY = "Q" ]; then
-      echo -e "${BR_YELLOW}Aborted by User${BR_NORM}"
-      exit
-    elif [[ "$REPLY" = [0-9]* ]] && [ "$REPLY" -eq 1 ]; then
-      BRinterface="cli"
-      break
-    elif [[ "$REPLY" = [0-9]* ]] && [ "$REPLY" -eq 2 ]; then
-      BRinterface="dialog"
-      break
-    else
-      echo -e "${BR_RED}Please enter a valid option from the list${BR_NORM}"
-    fi
-  done
-fi
-
-if [ "$BRinterface" = "Dialog" ] && [ -z $(which dialog 2> /dev/null) ];then
-  echo -e "[${BR_RED}ERROR${BR_NORM}] Package dialog is not installed. Install the package and re-run the script"
-  exit
 fi
 
 if [ "$BRmode" = "Backup" ]; then
@@ -508,6 +474,29 @@ if [ "$BRmode" = "Backup" ]; then
     if [ -z "$BRuseroptions" ]; then
       BRuseroptions="No"
     fi
+  fi
+
+  if [ -z "$BRinterface" ]; then
+    echo -e "\n${BR_CYAN}Select interface:${BR_NORM}"
+    select c in "CLI" "Dialog"; do
+      if [ $REPLY = "q" ] || [ $REPLY = "Q" ]; then
+        echo -e "${BR_YELLOW}Aborted by User${BR_NORM}"
+        exit
+      elif [[ "$REPLY" = [0-9]* ]] && [ "$REPLY" -eq 1 ]; then
+        BRinterface="cli"
+        break
+      elif [[ "$REPLY" = [0-9]* ]] && [ "$REPLY" -eq 2 ]; then
+        BRinterface="dialog"
+        break
+      else
+        echo -e "${BR_RED}Please enter a valid option from the list${BR_NORM}"
+      fi
+    done
+  fi
+
+  if [ "$BRinterface" = "Dialog" ] && [ -z $(which dialog 2> /dev/null) ];then
+    echo -e "[${BR_RED}ERROR${BR_NORM}] Package dialog is not installed. Install the package and re-run the script"
+    exit
   fi
 
   if [ "$BRinterface" = "cli" ]; then
@@ -822,8 +811,8 @@ elif [ "$BRmode" = "Restore" ] || [ "$BRmode" = "Transfer" ] || [ "$BRmode" = "B
     if [ "$BRmode" = "Restore" ]; then
       echo -e "\n==>Also make sure that this system and the system you want to restore\n   have the same architecture."
       echo -e "\n==>In case of GNU tar, Fedora backups can only be restored from a Fedora\n   enviroment, due to extra tar options.${BR_NORM}"
-      echo -e "\n${BR_CYAN}Press ENTER to continue.${BR_NORM}"
     fi
+    echo -e "\n${BR_CYAN}Press ENTER to continue.${BR_NORM}"
   }
 
   exit_screen() {
@@ -1826,6 +1815,29 @@ elif [ "$BRmode" = "Restore" ] || [ "$BRmode" = "Transfer" ] || [ "$BRmode" = "B
 
   if [ -f /etc/pacman.conf ]; then
     PATH="$PATH:/usr/sbin:/bin"
+  fi
+
+  if [ -z "$BRinterface" ]; then
+    echo -e "\n${BR_CYAN}Select interface:${BR_NORM}"
+    select c in "CLI" "Dialog"; do
+      if [ $REPLY = "q" ] || [ $REPLY = "Q" ]; then
+        echo -e "${BR_YELLOW}Aborted by User${BR_NORM}"
+        exit
+      elif [[ "$REPLY" = [0-9]* ]] && [ "$REPLY" -eq 1 ]; then
+        BRinterface="cli"
+        break
+      elif [[ "$REPLY" = [0-9]* ]] && [ "$REPLY" -eq 2 ]; then
+        BRinterface="dialog"
+        break
+      else
+        echo -e "${BR_RED}Please enter a valid option from the list${BR_NORM}"
+      fi
+    done
+  fi
+
+  if [ -z $(which dialog 2> /dev/null) ];then
+    echo -e "[${BR_RED}ERROR${BR_NORM}] Package dialog is not installed. Install the package and re-run the script"
+    exit
   fi
 
   if [ "$BRinterface" = "cli" ]; then
