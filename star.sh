@@ -538,7 +538,7 @@ if [ -z "$BRmode" ]; then
       echo -e "${BR_YELLOW}Aborted by User${BR_NORM}"
       exit
     elif [[ "$REPLY" = [0-9]* ]] && [ "$REPLY" -gt 0 ] && [ "$REPLY" -le ${#modelist[@]} ]; then
-      BRmode=(`echo $c | awk '{ print $1 }'`)
+      BRmode=(`echo $c`)
       break
     else
       echo -e "${BR_RED}Please select a valid option from the list${BR_NORM}"
@@ -546,28 +546,31 @@ if [ -z "$BRmode" ]; then
   done
 fi
 
-  if [ -z "$BRinterface" ]; then
-    echo -e "\n${BR_CYAN}Select interface:${BR_NORM}"
-    select c in "CLI" "Dialog"; do
-      if [ $REPLY = "q" ] || [ $REPLY = "Q" ]; then
-        echo -e "${BR_YELLOW}Aborted by User${BR_NORM}"
-        exit
-      elif [[ "$REPLY" = [0-9]* ]] && [ "$REPLY" -eq 1 ]; then
-        BRinterface="cli"
-        break
-      elif [[ "$REPLY" = [0-9]* ]] && [ "$REPLY" -eq 2 ]; then
-        BRinterface="dialog"
-        break
-      else
-        echo -e "${BR_RED}Please enter a valid option from the list${BR_NORM}"
-      fi
-    done
-  fi
+echo $BRmode
+exit
 
-  if [ "$BRinterface" = "Dialog" ] && [ -z $(which dialog 2> /dev/null) ];then
-    echo -e "[${BR_RED}ERROR${BR_NORM}] Package dialog is not installed. Install the package and re-run the script"
-    exit
-  fi
+if [ -z "$BRinterface" ]; then
+  echo -e "\n${BR_CYAN}Select interface:${BR_NORM}"
+  select c in "CLI" "Dialog"; do
+    if [ $REPLY = "q" ] || [ $REPLY = "Q" ]; then
+      echo -e "${BR_YELLOW}Aborted by User${BR_NORM}"
+      exit
+    elif [[ "$REPLY" = [0-9]* ]] && [ "$REPLY" -eq 1 ]; then
+      BRinterface="cli"
+      break
+    elif [[ "$REPLY" = [0-9]* ]] && [ "$REPLY" -eq 2 ]; then
+      BRinterface="dialog"
+      break
+    else
+      echo -e "${BR_RED}Please enter a valid option from the list${BR_NORM}"
+    fi
+  done
+fi
+
+if [ "$BRinterface" = "Dialog" ] && [ -z $(which dialog 2> /dev/null) ];then
+  echo -e "[${BR_RED}ERROR${BR_NORM}] Package dialog is not installed. Install the package and re-run the script"
+  exit
+fi
 
 if [ "$BRmode" = "Backup" ]; then
 
