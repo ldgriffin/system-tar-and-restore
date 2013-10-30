@@ -391,6 +391,25 @@ class RestoreTab(NotebookTab):
         "": "",
     }
 
+    DESCRIPTION = (
+        "This script will restore a backup image of your system or transfer this\n"
+        "system in user defined partitions.\n"
+        "\n"
+        "==> Make sure you have created and formatted at least one partition\n"
+        "for root (/) and optionally partitions for /home and /boot.\n"
+        "\n"
+        "==> Make sure that target LVM volume groups are activated and target\n"
+        "RAID arrays are properly assembled.\n"
+        "\n"
+        "==> If you didn't include /home directory in the backup and you already\n"
+        "have a seperate /home partition, simply enter it when prompted.\n"
+        "\n"
+        "==> Also make sure that this system and the system you want to restore\n"
+        "have the same architecture.\n"
+        "\n"
+        "==> In case of GNU tar, Fedora backups can only be restored from a Fedora\n"
+        "enviroment, due to extra tar options.\n")
+
 
     def __init__(self, parent):
         # In Python 2 we can't use super() because the Tkinter objects derive
@@ -402,7 +421,38 @@ class RestoreTab(NotebookTab):
             super(RestoreTab, self).__init__(parent)
         self.parent = parent
 
+        self.archive_path = tk.StringVar()
+        self.archiver = tk.StringVar()
+        self.root = tk.StringVar()
+        self.home = tk.StringVar()
+        self.boot = tk.StringVar()
+        self.swap = tk.StringVar()
+        self.username = tk.StringVar()
+        self.password = tk.StringVar()
+
+        self.archive_path.trace("w", self.cb_gather_arguments)
+        self.archiver.trace("w", self.cb_gather_arguments)
+        self.username.trace("w", self.cb_gather_arguments)
+        self.password.trace("w", self.cb_gather_arguments)
+
+        self.archive_path.set("")
+        self.archiver.set("tar")
+        self.username.set("")
+        self.password.set("")
+
+        self.create_UI()
+
     def create_UI(self):
+        self.add_open_filename(row=1, variable=self.archive_path, state="normal",
+                               label="Archive URI:",
+                               help="Choose the archive URI. It can be either a url or filepath.")
+        self.add_entry(row=2, label="Username:", variable=self.username)
+        self.add_entry(row=3, label="Password:", variable=self.password)
+        self.add_combobox(row=4, label="Archiver:", variable=self.archiver, values=self.COMBO_CHOICES["archiver"])
+
+        self.add_readonly_text(row=8, text=self.DESCRIPTION)
+
+    def cb_gather_arguments(self, *args, **kwargs):
         pass
 
 
