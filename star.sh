@@ -78,7 +78,7 @@ check_input() {
     fi
   fi
 
-  if [ -n "$BRhome" ] || [ -n "$BRboot" ] || [ -n "$BRother" ] || [ -n "$BRrootsubvol" ] || [ -n "$BRsubvolother" ] && [ -z "$BRroot" ]; then
+  if [ -n "$BRsyslinux" ] || [ -n "$BRgrub" ] || [ -n "$BRswap" ] || [ -n "$BRhome" ] || [ -n "$BRboot" ] || [ -n "$BRother" ] || [ -n "$BRrootsubvol" ] || [ -n "$BRsubvolother" ] && [ -z "$BRroot" ]; then
     echo -e "[${BR_RED}ERROR${BR_NORM}] You must specify a target root partition."
     BRSTOP="y"
   fi
@@ -242,6 +242,11 @@ fi
     BRSTOP="y"
   fi
 
+  if [ ! -d "$BRFOLDER" ] && [ -n "$BRFOLDER" ]; then
+    echo -e "[${BR_RED}ERROR${BR_NORM}] Directory does not exist: $BRFOLDER"
+    BRSTOP="y"
+  fi
+
   if [ -z "$BRgrub" ] && [ -z "$BRsyslinux" ] && [ -n "$BR_KERNEL_OPTS" ]; then
     echo -e "[${BR_YELLOW}WARNING${BR_NORM}] No bootloader selected, skipping kernel options"
   fi
@@ -255,7 +260,8 @@ fi
   fi
 }
 
-BRargs=`getopt -o "I:d:C:u:enNa:qr:s:b:h:g:S:f:U:l:p:R:toNm:k:c:O:" -l "Interface:,destination:,Compression:,user-options:,exclude-home,no-hidden,no-color,archiver:,quiet,root:,swap:,boot:,home:,grub:,syslinux:,file:,url:,username:,password:,quiet,rootsubvolname:,transfer,only-hidden,no-color,mount-options:,kernel-options:,custom-partitions:,archiver:,other-subvolumes:,help" -n "$1" -- "$@"`
+
+BRargs=`getopt -o "i:d:C:u:enNa:qr:s:b:h:g:S:f:U:l:p:R:toNm:k:c:O:" -l "Interface:,destination:,Compression:,user-options:,exclude-home,no-hidden,no-color,archiver:,quiet,root:,swap:,boot:,home:,grub:,syslinux:,file:,url:,username:,password:,quiet,rootsubvolname:,transfer,only-hidden,no-color,mount-options:,kernel-options:,custom-partitions:,archiver:,other-subvolumes:,help" -n "$1" -- "$@"`
 
 if [ "$?" -ne "0" ]; then
   echo "See $0 --help"
@@ -266,7 +272,7 @@ eval set -- "$BRargs";
 
 while true; do
   case "$1" in
-    -I|--interface)
+    -i|--interface)
       BRinterface=$2
       shift 2
     ;;
@@ -290,7 +296,7 @@ while true; do
       shift 2
     ;;
     -e|--exclude-home)
-      BRhome="No"
+      BRbhome="No"
       BRmode="Backup"
       BRbackup="y"
       shift
@@ -423,7 +429,7 @@ while true; do
 ${BR_BOLD}$BR_VERSION
 
 ${BR_BOLD}General:${BR_NORM}
-  -I, --interface           interface to use (cli dialog)
+  -i, --interface           interface to use (cli dialog)
   -N, --no-color            disable colors
   -q, --quiet               dont ask, just run
   -a, --archiver            select archiver (tar bsdtar)
@@ -491,18 +497,29 @@ if [ -n "$BRbackup" ] && [ -n "$BRboth" ]; then
   exit
 fi
 
-check_input
-
-if [ -n "$BRroot" ] && [ -z "$BRfile" ] && [ -z "$BRurl" ] && [ -z "$BRrestore" ]; then
-  echo -e "[${BR_YELLOW}WARNING${BR_NORM}] You must specify a backup file or enable transfer mode"
-  exit
-fi
-
 if [ "$BRmode" = "Transfer" ] && [ -z "$BRhidden" ]; then
   BRhidden="n"
 fi
 
-PS3="Enter number or Q to quit: "
+if [ -n "$BRroot" ] && [ -z "$BRfile" ] && [ -z "$BRurl" ] && [ -z "$BRrestore" ]; then
+  echo -e "[${BR_YELLOW}WARNING${BR_NORM}] You must specify a backup file or enable transfer mode"
+  BRSTOP="y"
+fi
+
+BR_WRK="[${BR_CYAN}WORKING${BR_NORM}] "
+
+if [ -n "$BRhome" ]; then
+  BRcustom="y"
+  BRcustomparts+=(/home="$BRhome")
+fi
+
+if [ -n "$BRboot" ]; then
+  BRcustom="y"
+  BRcustomparts+=(/boot="$BRboot")
+fi
+
+check_input
+
 
 if [ -n "$BRroot" ] || [ -n "$BRhome" ] || [ -n "$BRboot" ] || [ -n "$BRother" ] || [ -n "$BRrootsubvol" ] || [ -n "$BRsubvolother" ] || [ -n "$BRgrub" ] || [ -n "$BRsyslinux" ] || [ -n "$BR_KERNEL_OPTS" ]; then
   modelist=("Restore" "Transfer")
@@ -511,6 +528,8 @@ elif [ -n "$BRarchiver" ]; then
 else
   modelist=("Backup" "Restore" "Transfer")
 fi
+
+PS3="Enter number or Q to quit: "
 
 if [ -z "$BRmode" ]; then
   echo -e "\n${BR_CYAN}Select Mode:${BR_NORM}"
@@ -526,6 +545,29 @@ if [ -z "$BRmode" ]; then
     fi
   done
 fi
+
+  if [ -z "$BRinterface" ]; then
+    echo -e "\n${BR_CYAN}Select interface:${BR_NORM}"
+    select c in "CLI" "Dialog"; do
+      if [ $REPLY = "q" ] || [ $REPLY = "Q" ]; then
+        echo -e "${BR_YELLOW}Aborted by User${BR_NORM}"
+        exit
+      elif [[ "$REPLY" = [0-9]* ]] && [ "$REPLY" -eq 1 ]; then
+        BRinterface="cli"
+        break
+      elif [[ "$REPLY" = [0-9]* ]] && [ "$REPLY" -eq 2 ]; then
+        BRinterface="dialog"
+        break
+      else
+        echo -e "${BR_RED}Please enter a valid option from the list${BR_NORM}"
+      fi
+    done
+  fi
+
+  if [ "$BRinterface" = "Dialog" ] && [ -z $(which dialog 2> /dev/null) ];then
+    echo -e "[${BR_RED}ERROR${BR_NORM}] Package dialog is not installed. Install the package and re-run the script"
+    exit
+  fi
 
 if [ "$BRmode" = "Backup" ]; then
 
@@ -569,11 +611,11 @@ if [ "$BRmode" = "Backup" ]; then
     echo "Compression: $BRcompression"
 
     echo -e "\nHOME DIRECTORY:"
-    if [ "$BRhome" = "Yes" ]; then
+    if [ "$BRbhome" = "Yes" ]; then
       echo "Include"
-    elif [ "$BRhome" = "No" ] && [ "$BRhidden" = "Yes" ]; then
+    elif [ "$BRbhome" = "No" ] && [ "$BRhidden" = "Yes" ]; then
       echo "Only hidden files and folders"
-    elif [ "$BRhome" = "No" ] && [ "$BRhidden" = "No" ]; then
+    elif [ "$BRbhome" = "No" ] && [ "$BRhidden" = "No" ]; then
       echo "Exclude"
     fi
 
@@ -617,9 +659,9 @@ if [ "$BRmode" = "Backup" ]; then
   set_tar_options() {
     if [ "$BRarchiver" = "tar" ]; then
       BR_TAROPTS="$BR_USER_OPTS --sparse --exclude=/run/* --exclude=/dev/* --exclude=/proc/* --exclude=lost+found --exclude=/sys/* --exclude=/media/* --exclude=/tmp/* --exclude=/mnt/* --exclude=.gvfs"
-      if [ "$BRhome" = "No" ] && [ "$BRhidden" = "No" ] ; then
+      if [ "$BRbhome" = "No" ] && [ "$BRhidden" = "No" ] ; then
         BR_TAROPTS="${BR_TAROPTS} --exclude=/home/*"
-      elif [ "$BRhome" = "No" ] && [ "$BRhidden" = "Yes" ] ; then
+      elif [ "$BRbhome" = "No" ] && [ "$BRhidden" = "Yes" ] ; then
         find /home/*/* -maxdepth 0 -iname ".*" -prune -o -print > /tmp/excludelist
         BR_TAROPTS="${BR_TAROPTS} --exclude-from=/tmp/excludelist"
       fi
@@ -628,9 +670,9 @@ if [ "$BRmode" = "Backup" ]; then
       fi
     elif [ "$BRarchiver" = "bsdtar" ]; then
       BR_TAROPTS=("$BR_USER_OPTS" --exclude=/run/*?* --exclude=/dev/*?* --exclude=/proc/*?* --exclude=/sys/*?* --exclude=/media/*?* --exclude=/tmp/*?* --exclude=/mnt/*?* --exclude=.gvfs --exclude=lost+found)
-      if [ "$BRhome" = "No" ] && [ "$BRhidden" = "No" ] ; then
+      if [ "$BRbhome" = "No" ] && [ "$BRhidden" = "No" ] ; then
         BR_TAROPTS+=(--exclude=/home/*?*)
-      elif [ "$BRhome" = "No" ] && [ "$BRhidden" = "Yes" ] ; then
+      elif [ "$BRbhome" = "No" ] && [ "$BRhidden" = "Yes" ] ; then
         find /home/*/* -maxdepth 0 -iname ".*" -prune -o -print > /tmp/excludelist
         BR_TAROPTS+=(--exclude-from=/tmp/excludelist)
       fi
@@ -678,15 +720,8 @@ if [ "$BRmode" = "Backup" ]; then
     color_variables
   fi
 
-  BR_WRK="[${BR_CYAN}WORKING${BR_NORM}] "
-
   if [ -f /etc/yum.conf ]; then
     BRfedoratar="y"
-  fi
-
-  if [ ! -d "$BRFOLDER" ] && [ -n "$BRFOLDER" ]; then
-    echo -e "[${BR_RED}ERROR${BR_NORM}] Directory does not exist: $BRFOLDER"
-    BRSTOP="y"
   fi
 
   if [ -n "$BRcompression" ] && [ ! "$BRcompression" = "gzip" ] && [ ! "$BRcompression" = "xz" ]; then
@@ -703,35 +738,12 @@ if [ "$BRmode" = "Backup" ]; then
   fi
 
   if [ -n "$BRFOLDER" ]; then
-    if [ -z "$BRhome" ]; then
-      BRhome="Yes"
+    if [ -z "$BRbhome" ]; then
+      BRbhome="Yes"
     fi
     if [ -z "$BRuseroptions" ]; then
       BRuseroptions="No"
     fi
-  fi
-
-  if [ -z "$BRinterface" ]; then
-    echo -e "\n${BR_CYAN}Select interface:${BR_NORM}"
-    select c in "CLI" "Dialog"; do
-      if [ $REPLY = "q" ] || [ $REPLY = "Q" ]; then
-        echo -e "${BR_YELLOW}Aborted by User${BR_NORM}"
-        exit
-      elif [[ "$REPLY" = [0-9]* ]] && [ "$REPLY" -eq 1 ]; then
-        BRinterface="cli"
-        break
-      elif [[ "$REPLY" = [0-9]* ]] && [ "$REPLY" -eq 2 ]; then
-        BRinterface="dialog"
-        break
-      else
-        echo -e "${BR_RED}Please enter a valid option from the list${BR_NORM}"
-      fi
-    done
-  fi
-
-  if [ "$BRinterface" = "Dialog" ] && [ -z $(which dialog 2> /dev/null) ];then
-    echo -e "[${BR_RED}ERROR${BR_NORM}] Package dialog is not installed. Install the package and re-run the script"
-    exit
   fi
 
   if [ "$BRinterface" = "cli" ]; then
@@ -768,21 +780,21 @@ if [ "$BRmode" = "Backup" ]; then
       fi
     done
 
-    if [ -z "$BRhome" ]; then
+    if [ -z "$BRbhome" ]; then
       echo -e "\n${BR_CYAN}Home (/home) directory options:${BR_NORM}"
       select c in "Include" "Only hidden files and folders" "Exclude"; do
         if [ $REPLY = "q" ] || [ $REPLY = "Q" ]; then
           echo -e "${BR_YELLOW}Aborted by User${BR_NORM}"
           exit
         elif [ "$REPLY" = "1" ]; then
-          BRhome="Yes"
+          BRbhome="Yes"
           break
         elif [ "$REPLY" = "2" ]; then
-          BRhome="No"
+          BRbhome="No"
           BRhidden="Yes"
           break
         elif [ "$REPLY" = "3" ]; then
-          BRhome="No"
+          BRbhome="No"
           BRhidden="No"
           break
         else
@@ -941,17 +953,17 @@ if [ "$BRmode" = "Backup" ]; then
       fi
     fi
 
-    if [ -z "$BRhome" ]; then
+    if [ -z "$BRbhome" ]; then
       REPLY=$(dialog --cancel-label Quit --menu "Home (/home) directory options:" 13 50 13 1 Include 2 "Only hidden files and folders" 3 Exclude 2>&1 1>&3)
       if [ "$?" = "1" ]; then exit; fi
 
       if [ "$REPLY" = "1" ]; then
-        BRhome="Yes"
+        BRbhome="Yes"
       elif [ "$REPLY" = "2" ]; then
-        BRhome="No"
+        BRbhome="No"
         BRhidden="Yes"
       elif [ "$REPLY" = "3" ]; then
-        BRhome="No"
+        BRbhome="No"
         BRhidden="No"
       fi
     fi
@@ -1744,25 +1756,8 @@ elif [ "$BRmode" = "Restore" ] || [ "$BRmode" = "Transfer" ] || [ "$BRmode" = "B
     if [ "$BRsyslinux" = "-1" ]; then unset BRsyslinux; fi
   }
 
-  if [ -z "$BRnocolor" ]; then
-    color_variables
-  fi
-
-  BR_WRK="[${BR_CYAN}WORKING${BR_NORM}] "
   DEFAULTIFS=$IFS
   IFS=$'\n'
-
-  if [ -n "$BRhome" ]; then
-    BRcustom="y"
-    BRcustomparts+=(/home="$BRhome")
-  fi
-
-  if [ -n "$BRboot" ]; then
-    BRcustom="y"
-    BRcustomparts+=(/boot="$BRboot")
-  fi
-
-  check_input
 
   if [ -n "$BRroot" ]; then
     if [ -z "$BRrootsubvolname" ]; then
@@ -1814,29 +1809,6 @@ elif [ "$BRmode" = "Restore" ] || [ "$BRmode" = "Transfer" ] || [ "$BRmode" = "B
 
   if [ -f /etc/pacman.conf ]; then
     PATH="$PATH:/usr/sbin:/bin"
-  fi
-
-  if [ -z "$BRinterface" ]; then
-    echo -e "\n${BR_CYAN}Select interface:${BR_NORM}"
-    select c in "CLI" "Dialog"; do
-      if [ $REPLY = "q" ] || [ $REPLY = "Q" ]; then
-        echo -e "${BR_YELLOW}Aborted by User${BR_NORM}"
-        exit
-      elif [[ "$REPLY" = [0-9]* ]] && [ "$REPLY" -eq 1 ]; then
-        BRinterface="cli"
-        break
-      elif [[ "$REPLY" = [0-9]* ]] && [ "$REPLY" -eq 2 ]; then
-        BRinterface="dialog"
-        break
-      else
-        echo -e "${BR_RED}Please enter a valid option from the list${BR_NORM}"
-      fi
-    done
-  fi
-
-  if [ -z $(which dialog 2> /dev/null) ];then
-    echo -e "[${BR_RED}ERROR${BR_NORM}] Package dialog is not installed. Install the package and re-run the script"
-    exit
   fi
 
   if [ "$BRinterface" = "cli" ]; then
@@ -2537,11 +2509,6 @@ elif [ "$BRmode" = "Restore" ] || [ "$BRmode" = "Transfer" ] || [ "$BRmode" = "B
     fi
 
     unset_vars
-
-    if [ -z "$BRmode" ]; then
-      BRmode=$(dialog --cancel-label Quit --menu "Select Mode:" 12 50 12 Restore "system from backup file" Transfer "this system with rsync" 2>&1 1>&3)
-      if [ "$?" = "1" ]; then exit; fi
-    fi
 
     if [ "$BRmode" = "Restore" ]; then
       if [ -z "$BRarchiver" ]; then
