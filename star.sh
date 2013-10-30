@@ -192,7 +192,7 @@ check_input() {
         BRSTOP="y"
       fi
     done < <( for a in ${BRsubvols[@]}; do echo $a; done )
-fi
+  fi
 
   if [ -n "$BRgrub" ]; then
     for i in /dev/[hs]d[a-z]; do if [[ $i == ${BRgrub} ]] ; then BRgrubcheck="true" ; fi; done
