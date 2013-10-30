@@ -441,11 +441,19 @@ class RestoreTab(NotebookTab):
         self.home = tk.StringVar()
         self.boot = tk.StringVar()
         self.swap = tk.StringVar()
+        self.custom_partitions = tk.StringVar()
+        self.mount_options = tk.StringVar()
         self.username = tk.StringVar()
         self.password = tk.StringVar()
 
         self.archive_path.trace("w", self.cb_gather_arguments)
         self.archiver.trace("w", self.cb_gather_arguments)
+        self.root.trace("w", self.cb_gather_arguments)
+        self.home.trace("w", self.cb_gather_arguments)
+        self.boot.trace("w", self.cb_gather_arguments)
+        self.swap.trace("w", self.cb_gather_arguments)
+        self.custom_partitions.trace("w", self.cb_gather_arguments)
+        self.mount_options.trace("w", self.cb_gather_arguments)
         self.username.trace("w", self.cb_gather_arguments)
         self.password.trace("w", self.cb_gather_arguments)
 
@@ -460,11 +468,34 @@ class RestoreTab(NotebookTab):
         self.add_open_filename(row=1, variable=self.archive_path, state="normal",
                                label="Archive URI:",
                                help="Choose the archive URI. It can be either a url or filepath.")
-        self.add_entry(row=2, label="Username:", variable=self.username)
-        self.add_entry(row=3, label="Password:", variable=self.password)
-        self.add_combobox(row=4, label="Archiver:", variable=self.archiver, values=self.COMBO_CHOICES["archiver"])
 
-        self.add_readonly_text(row=8, text=self.DESCRIPTION)
+        self.add_entry(row=2, label="Username:", variable=self.username,
+                       help="Optional. Used for authentication when the archive is on the network.")
+
+        self.add_entry(row=3, label="Password:", variable=self.password,
+                       help="Optional. Used for authentication when the archive is on the network.")
+
+        self.add_combobox(row=4, label="Archiver:", variable=self.archiver,
+                          values=self.COMBO_CHOICES["archiver"],
+                          help="Choose the archiver program.")
+
+        self.add_combobox(row=5, label="Root partition:", variable=self.root,
+                          values=self.COMBO_CHOICES["disks"],
+                          help="Choose the root partition (/).")
+
+        self.add_combobox(row=6, label="Home partition:", variable=self.home,
+                          values=self.COMBO_CHOICES["disks"],
+                          help="Optional. Choose the home partition (/home/).")
+
+        self.add_combobox(row=7, label="Boot partition:", variable=self.boot,
+                          values=self.COMBO_CHOICES["disks"],
+                          help="Optional. Choose the boot partition (/home/).")
+
+        self.add_combobox(row=8, label="Swap partition:", variable=self.swap,
+                          values=self.COMBO_CHOICES["disks"],
+                          help="Optional. Choose the swap partition (/home/).")
+
+        self.add_readonly_text(row=18, text=self.DESCRIPTION)
 
     def cb_gather_arguments(self, *args, **kwargs):
         pass
