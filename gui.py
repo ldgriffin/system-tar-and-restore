@@ -436,6 +436,8 @@ class RestoreTab(NotebookTab):
         self.parent = parent
 
         self.archive_path = tk.StringVar()
+        self.username = tk.StringVar()
+        self.password = tk.StringVar()
         self.archiver = tk.StringVar()
         self.bootloader = tk.StringVar()
         self.kernel_options = tk.StringVar()
@@ -445,10 +447,11 @@ class RestoreTab(NotebookTab):
         self.swap = tk.StringVar()
         self.custom_partitions = tk.StringVar()
         self.mount_options = tk.StringVar()
-        self.username = tk.StringVar()
-        self.password = tk.StringVar()
+        self.command = tk.StringVar()
 
         self.archive_path.trace("w", self.cb_gather_arguments)
+        self.username.trace("w", self.cb_gather_arguments)
+        self.password.trace("w", self.cb_gather_arguments)
         self.archiver.trace("w", self.cb_gather_arguments)
         self.bootloader.trace("w", self.cb_gather_arguments)
         self.kernel_options.trace("w", self.cb_gather_arguments)
@@ -458,8 +461,7 @@ class RestoreTab(NotebookTab):
         self.swap.trace("w", self.cb_gather_arguments)
         self.custom_partitions.trace("w", self.cb_gather_arguments)
         self.mount_options.trace("w", self.cb_gather_arguments)
-        self.username.trace("w", self.cb_gather_arguments)
-        self.password.trace("w", self.cb_gather_arguments)
+        self.command.trace("w", self.cb_gather_arguments)
 
         self.archiver.set("tar")
         self.bootloader.set("grub")
@@ -486,7 +488,7 @@ class RestoreTab(NotebookTab):
                           help="Choose the bootloader.")
 
         self.add_entry(row=6, label="Kernel options.",
-                       variable=self.custom_partitions,
+                       variable=self.kernel_options,
                        help="Optional. Specify additional kernel options for SysLinux.")
 
         self.add_combobox(row=7, label="Root partition:", variable=self.root,
@@ -513,10 +515,63 @@ class RestoreTab(NotebookTab):
                        variable=self.mount_options,
                        help="Specify a comma separated list of mount options for the root partition.")
 
+        self.add_entry_with_button(row=13, label="Command:", variable=self.command,
+                                   bt_text="Execute", callback=self.cb_execute_command,
+                                   help="This is the command that will be executed.")
+
         self.add_readonly_text(row=18, text=self.DESCRIPTION)
 
     def cb_gather_arguments(self, *args, **kwargs):
-        pass
+        arguments = ['%s -i cli -q' % self.SCRIPT_NAME]
+
+        archive_path = self.archive_path.get()
+        username = self.username.get()
+        password = self.password.get()
+        archiver = self.archiver.get()
+        bootloader = self.bootloader.get()
+        kernel_options = self.kernel_options.get()
+        root = self.root.get()
+        home = self.home.get()
+        boot = self.boot.get()
+        swap = self.swap.get()
+        custom_partitions = self.custom_partitions.get()
+        mount_options = self.mount_options.get()
+
+        if archive_path.startswith("http"):
+            arguments.append("-u %s" % archive_path)
+        else:
+            arguments.append("-f %s" % archive_path)
+        if username:
+            arguments.append("-n %s" % username)
+        if password:
+            arguments.append("-p %s" % password)
+        if archiver:
+            arguments.append("-a %s" % archiver)
+        #if bootloader:
+            #arguments.append("-a %s" % bootloader)
+
+        if root:
+            arguments.append("-r %s" % root.split(":")[0])
+        if home:
+            arguments.append("-h %s" % home.split(":")[0])
+        if boot:
+            arguments.append("-b %s" % boot.split(":")[0])
+        if swap:
+            arguments.append("-s %s" % swap.split(":")[0])
+
+        #additional_options = self.additional_options.get().strip()
+        #if additional_options:
+            #additional_options = " ".join(option for option in additional_options.split())
+
+        #excluded_dirs = self.excluded_directories.get().strip()
+        #if excluded_dirs:
+            #excluded_dirs = " ".join("--exclude=%s" % directory for directory in excluded_dirs.split())
+
+        #if additional_options or excluded_dirs:
+            #sep = " " if additional_options and excluded_dirs else ""
+            #arguments.append('-u "%s"' % sep.join((additional_options, excluded_dirs)))
+
+        self.command.set(" ".join(arguments))
 
 
 class STAR_GUI(ttk.Frame):
