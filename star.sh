@@ -261,7 +261,7 @@ check_input() {
 }
 
 
-BRargs=`getopt -o "i:d:C:u:enNa:qr:s:b:h:g:S:f:U:l:p:R:toNm:k:c:O:" -l "Interface:,destination:,Compression:,user-options:,exclude-home,no-hidden,no-color,archiver:,quiet,root:,swap:,boot:,home:,grub:,syslinux:,file:,url:,username:,password:,quiet,rootsubvolname:,transfer,only-hidden,no-color,mount-options:,kernel-options:,custom-partitions:,archiver:,other-subvolumes:,help" -n "$1" -- "$@"`
+BRargs=`getopt -o "i:d:C:u:enNa:qr:s:b:h:g:S:f:U:l:p:R:toNm:k:c:O:" -l "interface:,destination:,Compression:,user-options:,exclude-home,no-hidden,no-color,archiver:,quiet,root:,swap:,boot:,home:,grub:,syslinux:,file:,url:,username:,password:,quiet,rootsubvolname:,transfer,only-hidden,no-color,mount-options:,kernel-options:,custom-partitions:,archiver:,other-subvolumes:,help" -n "$1" -- "$@"`
 
 if [ "$?" -ne "0" ]; then
   echo "See $0 --help"
