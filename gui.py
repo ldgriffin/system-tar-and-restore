@@ -26,7 +26,7 @@ else:
     from tkinter.scrolledtext import ScrolledText as ScrolledText
 
 
-#Toolip code adopted from:
+#Tooltip code adopted from:
 #https://github.com/python/cpython/blob/3ae6caaaa321edabe7baf9f2dbfe9b9f222ac628/Lib/idlelib/ToolTip.py
 
 class ToolTipBase:
@@ -219,9 +219,9 @@ class NotebookTab(ttk.Frame, FormLayoutMixin):
         try:
             subprocess.check_call(["which", "sudo"], stderr=subprocess.PIPE)
         except subprocess.CalledProcessError:
-            command = "xterm -hold -e su -c '%s -i cli -q'" % self.command.get()
+            command = "xterm -hold -e su -c '%s'" % self.command.get()
         else:
-            command = "xterm -hold -e sudo %s -i cli -q" % self.command.get()
+            command = "xterm -hold -e sudo %s" % self.command.get()
 
         subprocess.call(shlex.split(command))
 
@@ -356,7 +356,7 @@ class BackupTab(NotebookTab):
         self.columnconfigure(2, weight=1)
 
     def cb_gather_arguments(self, *args, **kwargs):
-        arguments = ['%s -d "%s"' % (self.SCRIPT_NAME, self.archive_directory.get())]
+        arguments = ['%s -i cli -q -d "%s"' % (self.SCRIPT_NAME, self.archive_directory.get())]
         for variable in (self.archiver, self.compression, self.home_folder):
             arguments.append(self.ARGUMENTS[variable.get()])
 
