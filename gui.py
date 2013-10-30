@@ -184,6 +184,13 @@ class FormLayoutMixin(object):
         scrolled_text.grid(row=row, column=column + 1, sticky="nsew")
         return scrolled_text
 
+    def add_readonly_text(self, row, label=None, variable=None, column=1, help=None, text="", *args, **kwargs):
+        """ Adds a `tk.Text` widget """
+        text_widget = tk.Text(self, textvariable=variable)
+        text_widget.insert("insert", text)
+        text_widget.configure(state=tk.DISABLED)
+        text_widget.grid(row=row, column=column + 1, sticky="nsew")
+
 
 class NotebookTab(ttk.Frame, FormLayoutMixin):
     def __init__(self, parent):
