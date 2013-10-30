@@ -437,6 +437,8 @@ class RestoreTab(NotebookTab):
 
         self.archive_path = tk.StringVar()
         self.archiver = tk.StringVar()
+        self.bootloader = tk.StringVar()
+        self.kernel_options = tk.StringVar()
         self.root = tk.StringVar()
         self.home = tk.StringVar()
         self.boot = tk.StringVar()
@@ -448,6 +450,8 @@ class RestoreTab(NotebookTab):
 
         self.archive_path.trace("w", self.cb_gather_arguments)
         self.archiver.trace("w", self.cb_gather_arguments)
+        self.bootloader.trace("w", self.cb_gather_arguments)
+        self.kernel_options.trace("w", self.cb_gather_arguments)
         self.root.trace("w", self.cb_gather_arguments)
         self.home.trace("w", self.cb_gather_arguments)
         self.boot.trace("w", self.cb_gather_arguments)
@@ -457,10 +461,8 @@ class RestoreTab(NotebookTab):
         self.username.trace("w", self.cb_gather_arguments)
         self.password.trace("w", self.cb_gather_arguments)
 
-        self.archive_path.set("")
         self.archiver.set("tar")
-        self.username.set("")
-        self.password.set("")
+        self.bootloader.set("grub")
 
         self.create_UI()
 
@@ -479,21 +481,37 @@ class RestoreTab(NotebookTab):
                           values=self.COMBO_CHOICES["archiver"],
                           help="Choose the archiver program.")
 
-        self.add_combobox(row=5, label="Root partition:", variable=self.root,
+        self.add_combobox(row=5, label="Bootloader:", variable=self.bootloader,
+                          values=self.COMBO_CHOICES["bootloader"],
+                          help="Choose the bootloader.")
+
+        self.add_entry(row=6, label="Kernel options.",
+                       variable=self.custom_partitions,
+                       help="Optional. Specify additional kernel options for SysLinux.")
+
+        self.add_combobox(row=7, label="Root partition:", variable=self.root,
                           values=self.COMBO_CHOICES["disks"],
                           help="Choose the root partition (/).")
 
-        self.add_combobox(row=6, label="Home partition:", variable=self.home,
+        self.add_combobox(row=8, label="Home partition:", variable=self.home,
                           values=self.COMBO_CHOICES["disks"],
                           help="Optional. Choose the home partition (/home/).")
 
-        self.add_combobox(row=7, label="Boot partition:", variable=self.boot,
+        self.add_combobox(row=9, label="Boot partition:", variable=self.boot,
                           values=self.COMBO_CHOICES["disks"],
                           help="Optional. Choose the boot partition (/home/).")
 
-        self.add_combobox(row=8, label="Swap partition:", variable=self.swap,
+        self.add_combobox(row=10, label="Swap partition:", variable=self.swap,
                           values=self.COMBO_CHOICES["disks"],
                           help="Optional. Choose the swap partition (/home/).")
+
+        self.add_entry(row=11, label="Custom partitions:",
+                       variable=self.custom_partitions,
+                       help="Specify custom partitions for fstab. The syntax is 'mountpoint=device' (e.g. '/dev/sda2=/mnt/data').")
+
+        self.add_entry(row=12, label="Mount options:",
+                       variable=self.mount_options,
+                       help="Specify a comma separated list of mount options for the root partition.")
 
         self.add_readonly_text(row=18, text=self.DESCRIPTION)
 
