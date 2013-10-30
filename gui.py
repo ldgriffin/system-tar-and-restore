@@ -269,20 +269,20 @@ class BackupTab(NotebookTab):
     }
 
     DESCRIPTION = (
-    "This script will make a tar backup image of this system.\n"
-    "\n"
-    " ==> Make sure you have enough free space.\n"
-    " ==> Also make sure you have GRUB or SYSLINUX packages installed.\n"
-    "\n"
-    "GRUB PACKAGES:\n"
-    " -> Arch: grub-bios\n"
-    " -> Debian: grub-pc\n"
-    " -> Fedora: grub2\n"
-    "\n"
-    "SYSLINUX PACKAGES:\n"
-    " -> Arch: syslinux\n"
-    " -> Debian: syslinux extlinux\n"
-    " -> Fedora: syslinux syslinux-extlinux\n")
+        "This script will make a tar backup image of this system.\n"
+        "\n"
+        " ==> Make sure you have enough free space.\n"
+        " ==> Also make sure you have GRUB or SYSLINUX packages installed.\n"
+        "\n"
+        "GRUB PACKAGES:\n"
+        " -> Arch: grub-bios\n"
+        " -> Debian: grub-pc\n"
+        " -> Fedora: grub2\n"
+        "\n"
+        "SYSLINUX PACKAGES:\n"
+        " -> Arch: syslinux\n"
+        " -> Debian: syslinux extlinux\n"
+        " -> Fedora: syslinux syslinux-extlinux\n")
 
     def __init__(self, parent):
         # In Python 2 we can't use super() because the Tkinter objects derive
