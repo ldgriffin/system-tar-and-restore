@@ -520,7 +520,6 @@ fi
 
 check_input
 
-
 if [ -n "$BRroot" ] || [ -n "$BRhome" ] || [ -n "$BRboot" ] || [ -n "$BRother" ] || [ -n "$BRrootsubvol" ] || [ -n "$BRsubvolother" ] || [ -n "$BRgrub" ] || [ -n "$BRsyslinux" ] || [ -n "$BR_KERNEL_OPTS" ]; then
   modelist=("Restore" "Transfer")
 elif [ -n "$BRarchiver" ]; then
@@ -715,10 +714,6 @@ if [ "$BRmode" = "Backup" ]; then
     sleep 1
     BRFile="$BRFOLDER"/Backup-$(hostname)-$(date +%d-%m-%Y-%T)
   }
-
-  if [ -z "$BRnocolor" ]; then
-    color_variables
-  fi
 
   if [ -f /etc/yum.conf ]; then
     BRfedoratar="y"
