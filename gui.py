@@ -26,6 +26,76 @@ else:
     from tkinter.scrolledtext import ScrolledText as ScrolledText
 
 
+#Toolip code adopted from:
+#https://github.com/python/cpython/blob/3ae6caaaa321edabe7baf9f2dbfe9b9f222ac628/Lib/idlelib/ToolTip.py
+
+class ToolTipBase:
+    def __init__(self, button, delay=750):
+        self.button = button
+        self.delay = delay
+        self.tipwindow = None
+        self.id = None
+        self.x = self.y = 0
+        self._id1 = self.button.bind("<Enter>", self.enter)
+        self._id2 = self.button.bind("<Leave>", self.leave)
+        self._id3 = self.button.bind("<ButtonPress>", self.leave)
+        #self._id4 = self.button.bind("<Motion>", self.motion)
+
+    ##----these methods handle the callbacks on "<Enter>", "<Leave>" and "<Motion>"---------------##
+    ##----events on the parent widget; override them if you want to change the widget's behavior--##
+
+    def enter(self, event=None):
+        self.schedule()
+
+    def leave(self, event=None):
+        self.unschedule()
+        self.hidetip()
+
+    ##------the methods that do the work:---------------------------------------------------------##
+
+    def schedule(self):
+        self.unschedule()
+        self.id = self.button.after(self.delay, self.showtip)
+
+    def unschedule(self):
+        id = self.id
+        self.id = None
+        if id:
+            self.button.after_cancel(id)
+
+    def showtip(self):
+        if self.tipwindow:
+            return
+        # The tip window must be completely outside the button;
+        # otherwise when the mouse enters the tip window we get
+        # a leave event and it disappears, and then we get an enter
+        # event and it reappears, and so on forever :-(
+        x = self.button.winfo_rootx()
+        y = self.button.winfo_rooty() + self.button.winfo_height() + 1
+        self.tipwindow = tw = tk.Toplevel(self.button)
+        tw.wm_overrideredirect(1)
+        tw.wm_geometry("+%d+%d" % (x, y))
+        self.showcontents()
+
+    def showcontents(self, text="Your text here"):
+        # Override this in derived class
+        label = ttk.Label(self.tipwindow, text=text, justify="left",
+                          background="#ffffe0", relief="solid", borderwidth=1)
+        label.pack()
+
+    def hidetip(self):
+        tw = self.tipwindow
+        self.tipwindow = None
+        if tw:
+            tw.destroy()
+
+class ToolTip(ToolTipBase):
+    def __init__(self, button, text):
+        ToolTipBase.__init__(self, button)
+        self.text = text
+    def showcontents(self):
+        ToolTipBase.showcontents(self, self.text)
+
 class FormLayoutMixin(object):
     """ A Mixin class defining help methods for creating FormLayouts """
 
