@@ -546,9 +546,6 @@ if [ -z "$BRmode" ]; then
   done
 fi
 
-echo $BRmode
-exit
-
 if [ -z "$BRinterface" ]; then
   echo -e "\n${BR_CYAN}Select interface:${BR_NORM}"
   select c in "CLI" "Dialog"; do
