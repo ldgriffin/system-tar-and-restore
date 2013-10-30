@@ -9,8 +9,10 @@ from __future__ import absolute_import
 # Standard Library imports
 import sys
 import os
+import re
 import shlex
 import subprocess
+from collections import OrderedDict
 
 # cross-version compatibility
 PY_VERSION = sys.version_info.major
@@ -25,6 +27,17 @@ else:
     from tkinter import filedialog
     from tkinter.scrolledtext import ScrolledText as ScrolledText
 
+
+def get_disks():
+    get_size = lambda disk: subprocess.check_output(shlex.split("lsblk -d -n -o size %s" % disk))[:-1]
+
+    pattern = re.compile( r"^/dev/[sh]d[a-z]\d+$|^/dev/md\d+$|^/dev/mapper/\w+-\w+$")
+
+    potential_disks = ["/dev/" + path for path in sorted(os.listdir("/dev/"))] +\
+                      ["/dev/mapper/" + path for path in sorted(os.listdir("/dev/mapper/"))]
+
+    disks = ((disk, get_size(disk)) for disk in potential_disks if pattern.match(disk))
+    return OrderedDict(disks)
 
 #Tooltip code adopted from:
 #https://github.com/python/cpython/blob/3ae6caaaa321edabe7baf9f2dbfe9b9f222ac628/Lib/idlelib/ToolTip.py
@@ -381,6 +394,7 @@ class RestoreTab(NotebookTab):
     COMBO_CHOICES = {
         "archiver": ("tar", "bsdtar"),
         "bootloader": ("grub", "syslinux"),
+        "disks": [""] + ["%s: %s" % (path, size) for path, size in get_disks().items()]
     }
 
     ARGUMENTS = {
