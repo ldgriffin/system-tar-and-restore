@@ -150,13 +150,13 @@ class FormLayoutMixin(object):
                                    state="readonly", bt_text="...",
                                    callback=callback, help=help, *args, **kwargs)
 
-    def add_open_filename(self, row, label, variable, multiple=False, help=None, *args, **kwargs):
+    def add_open_filename(self, row, label, variable, state="readonly", multiple=False, help=None, *args, **kwargs):
         if multiple:
             callback = lambda: variable.set(filedialog.askopenfilenames())
         else:
             callback = lambda: variable.set(filedialog.askopenfilename())
         self.add_entry_with_button(row=row, label=label, variable=variable,
-                                   state="readonly", bt_text="...",
+                                   state=state, bt_text="...",
                                    callback=callback, help=help, *args, **kwargs)
 
     def add_saveas_filename(self, row, label, variable, help=None, *args, **kwargs):
