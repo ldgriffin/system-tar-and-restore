@@ -501,11 +501,6 @@ if [ "$BRmode" = "Transfer" ] && [ -z "$BRhidden" ]; then
   BRhidden="n"
 fi
 
-if [ -n "$BRroot" ] && [ -z "$BRfile" ] && [ -z "$BRurl" ] && [ -z "$BRrestore" ]; then
-  echo -e "[${BR_YELLOW}WARNING${BR_NORM}] You must specify a backup file or enable transfer mode"
-  BRSTOP="y"
-fi
-
 BR_WRK="[${BR_CYAN}WORKING${BR_NORM}] "
 
 if [ -n "$BRhome" ]; then
@@ -521,14 +516,17 @@ fi
 check_input
 
 if [ -n "$BRroot" ] || [ -n "$BRhome" ] || [ -n "$BRboot" ] || [ -n "$BRother" ] || [ -n "$BRrootsubvol" ] || [ -n "$BRsubvolother" ] || [ -n "$BRgrub" ] || [ -n "$BRsyslinux" ] || [ -n "$BR_KERNEL_OPTS" ]; then
-  modelist=("Restore" "Transfer")
+  modelist=("Restore system from backup file" "Transfer this system using rsync")
 elif [ -n "$BRarchiver" ]; then
-  modelist=("Backup" "Restore" )
+  modelist=("Backup this system using tar" "Restore system from backup file" )
 else
-  modelist=("Backup" "Restore" "Transfer")
+  modelist=("Backup this system using tar" "Restore system from backup file" "Transfer this system using rsync")
 fi
 
 PS3="Enter number or Q to quit: "
+DEFAULTIFS=$IFS
+IFS=$'\n'
+
 
 if [ -z "$BRmode" ]; then
   echo -e "\n${BR_CYAN}Select Mode:${BR_NORM}"
@@ -537,13 +535,15 @@ if [ -z "$BRmode" ]; then
       echo -e "${BR_YELLOW}Aborted by User${BR_NORM}"
       exit
     elif [[ "$REPLY" = [0-9]* ]] && [ "$REPLY" -gt 0 ] && [ "$REPLY" -le ${#modelist[@]} ]; then
-      BRmode=(`echo $c`)
+      BRmode=(`echo $c | awk '{ print $1 }'`)
       break
     else
       echo -e "${BR_RED}Please select a valid option from the list${BR_NORM}"
     fi
   done
 fi
+
+IFS=$DEFAULTIFS
 
 if [ -z "$BRinterface" ]; then
   echo -e "\n${BR_CYAN}Select interface:${BR_NORM}"
