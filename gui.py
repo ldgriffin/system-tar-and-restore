@@ -541,35 +541,21 @@ class RestoreTab(NotebookTab):
             arguments.append("-u %s" % archive_path)
         else:
             arguments.append("-f %s" % archive_path)
-        if username:
-            arguments.append("-n %s" % username)
-        if password:
-            arguments.append("-p %s" % password)
-        if archiver:
-            arguments.append("-a %s" % archiver)
-        #if bootloader:
-            #arguments.append("-a %s" % bootloader)
 
-        if root:
-            arguments.append("-r %s" % root.split(":")[0])
-        if home:
-            arguments.append("-h %s" % home.split(":")[0])
-        if boot:
-            arguments.append("-b %s" % boot.split(":")[0])
-        if swap:
-            arguments.append("-s %s" % swap.split(":")[0])
+        arguments.append("-n %s" % username if username else "")
+        arguments.append("-p %s" % password if password else "")
+        arguments.append("-a %s" % archiver)
+        arguments.append("-g" if bootloader == "grub" else "-S")
+        arguments.append("-k %s" % kernel_options if kernel_options else "")
+        arguments.append("-r %s" % root.split(": ")[0] if root else "")
+        arguments.append("-h %s" % home.split(": ")[0] if home else "")
+        arguments.append("-b %s" % boot.split(": ")[0] if boot else "")
+        arguments.append("-s %s" % swap.split(": ")[0] if swap else "")
+        arguments.append("-c %s" % custom_partitions if custom_partitions else "")
+        arguments.append("-m %s" % mount_options if mount_options else "")
 
-        #additional_options = self.additional_options.get().strip()
-        #if additional_options:
-            #additional_options = " ".join(option for option in additional_options.split())
-
-        #excluded_dirs = self.excluded_directories.get().strip()
-        #if excluded_dirs:
-            #excluded_dirs = " ".join("--exclude=%s" % directory for directory in excluded_dirs.split())
-
-        #if additional_options or excluded_dirs:
-            #sep = " " if additional_options and excluded_dirs else ""
-            #arguments.append('-u "%s"' % sep.join((additional_options, excluded_dirs)))
+        # remove empty arguments
+        arguments = [arg.strip() for arg in arguments if arg]
 
         self.command.set(" ".join(arguments))
 
