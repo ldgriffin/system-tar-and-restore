@@ -1,6 +1,6 @@
 #!/bin/bash
 
-BR_VERSION="System Tar & Restore 3.8"
+BR_VERSION="System Tar & Restore Unified (UNSUPPORTED)"
 BR_SEP="::"
 
 color_variables() {
