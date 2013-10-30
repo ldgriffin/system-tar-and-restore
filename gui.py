@@ -252,15 +252,15 @@ class BackupTab(NotebookTab):
     COMBO_CHOICES = {
         "archiver": ("tar", "bsdtar"),
         "compression": ("gzip", "xz"),
-        "home_folder": ("Yes, include /home/*",
+        "home_folder": ("Include /home/*",
                         "Only include /home/*'s hidden files and directories.",
-                        "No, exclude /home/*"),
+                        "Exclude /home/*"),
     }
 
     ARGUMENTS = {
-        "Yes, include /home/*": "",
+        "Include /home/*": "",
         "Only include /home/*'s hidden files and directories.": "-h",
-        "No, exclude /home/*": "-h -n",
+        "Exclude /home/*": "-h -n",
         "gzip": "-c gzip",
         "xz": "-c xz",
         "tar": "-a tar",
@@ -352,6 +352,7 @@ class BackupTab(NotebookTab):
                                    help="This is the command that will be executed.")
 
         self.add_readonly_text(row=8, text=self.DESCRIPTION)
+
         self.columnconfigure(2, weight=1)
 
     def cb_gather_arguments(self, *args, **kwargs):
