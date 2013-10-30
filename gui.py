@@ -89,6 +89,7 @@ class ToolTipBase:
         if tw:
             tw.destroy()
 
+
 class ToolTip(ToolTipBase):
     def __init__(self, button, text):
         ToolTipBase.__init__(self, button)
@@ -96,19 +97,22 @@ class ToolTip(ToolTipBase):
     def showcontents(self):
         ToolTipBase.showcontents(self, self.text)
 
+
 class FormLayoutMixin(object):
     """ A Mixin class defining help methods for creating FormLayouts """
 
-    def add_entry(self, row, label, variable, state=None, column=1):
+    def add_entry(self, row, label, variable, state=None, column=1, help=None, *args, **kwargs):
         """ This method adds a row with a `ttk.Label` and a `ttk.Entry`. """
         # create the widgets
         label = ttk.Label(self, text=label)
         entry = ttk.Entry(self, textvariable=variable, state=state)
+        if help:
+            tooltip = ToolTip(entry, help)
         # place the widgets
         label.grid(row=row, column=column + 0, sticky="nse")
         entry.grid(row=row, column=column + 1, sticky="nsew")
 
-    def add_entry_with_button(self, row, label, variable, bt_text, callback, state=None, width=None, column=1):
+    def add_entry_with_button(self, row, label, variable, bt_text, callback, state=None, width=None, column=1, help=None, *args, **kwargs):
         """
         This method adds a row with a `ttk.Label`, a `ttk.Entry` and a `ttk.Button`.
 
@@ -131,6 +135,8 @@ class FormLayoutMixin(object):
         # create the widgets
         label = ttk.Label(self, text=label)
         entry = ttk.Entry(self, textvariable=variable, state=state)
+        if help:
+            tooltip = ToolTip(entry, help)
         button = ttk.Button(self, text=bt_text, width=width, command=callback)
 
         # place the widgets
@@ -138,39 +144,43 @@ class FormLayoutMixin(object):
         entry.grid(row=row, column=column + 1, sticky="nsew")
         button.grid(row=row, column=column + 2, sticky="nsew")
 
-    def add_choose_directory(self, row, label, variable, *args, **kwargs):
+    def add_choose_directory(self, row, label, variable, help=None, *args, **kwargs):
         callback = lambda: variable.set(filedialog.askdirectory())
         self.add_entry_with_button(row=row, label=label, variable=variable,
                                    state="readonly", bt_text="...",
-                                   callback=callback, *args, **kwargs)
+                                   callback=callback, help=help, *args, **kwargs)
 
-    def add_open_filename(self, row, label, variable, multiple=False, *args, **kwargs):
+    def add_open_filename(self, row, label, variable, multiple=False, help=None, *args, **kwargs):
         if multiple:
             callback = lambda: variable.set(filedialog.askopenfilenames())
         else:
             callback = lambda: variable.set(filedialog.askopenfilename())
         self.add_entry_with_button(row=row, label=label, variable=variable,
                                    state="readonly", bt_text="...",
-                                   callback=callback, *args, **kwargs)
+                                   callback=callback, help=help, *args, **kwargs)
 
-    def add_saveas_filename(self, row, label, variable, *args, **kwargs):
+    def add_saveas_filename(self, row, label, variable, help=None, *args, **kwargs):
         callback = lambda: variable.set(filedialog.asksaveasfilename())
         self.add_entry_with_button(row=row, label=label, variable=variable,
                                    state="readonly", bt_text="...",
-                                   callback=callback, *args, **kwargs)
+                                   callback=callback, help=help, *args, **kwargs)
 
-    def add_combobox(self, row, label, variable, values, state="readonly", column=1):
+    def add_combobox(self, row, label, variable, values, state="readonly", column=1, help=None, *args, **kwargs):
         """ This method adds a row with a `ttk.Label` and a `ttk.Combobox`. """
         # create the widgets
         label = ttk.Label(self, text=label)
         box = ttk.Combobox(self, textvariable=variable, state=state, values=values)
+        if help:
+            tooltip = ToolTip(box, help)
         # place the widgets
         label.grid(row=row, column=column + 0, sticky="nse")
         box.grid(row=row, column=column + 1, sticky="nsew")
 
-    def add_scrolledtext(self, row, variable=None, column=1, *args, **kwargs):
+    def add_scrolledtext(self, row, variable=None, column=1, help=None, *args, **kwargs):
         """ Adds a tk ScrolledText. """
         scrolled_text = ScrolledText(self, variable=variable)
+        if help:
+            tooltip = ToolTip(scrolled_text, help)
         scrolled_text.grid(row=row, column=column + 1, sticky="nsew")
         return scrolled_text
 
@@ -291,13 +301,32 @@ class BackupTab(NotebookTab):
         self.create_UI()
 
     def create_UI(self):
-        self.add_choose_directory(row=1, variable=self.archive_directory, label="Choose destination directory:")
-        self.add_combobox(row=2, label="Archiver:", variable=self.archiver, values=self.COMBO_CHOICES["archiver"])
-        self.add_combobox(row=3, label="Compression:", variable=self.compression, values=self.COMBO_CHOICES["compression"])
-        self.add_combobox(row=4, label="Home directory:", variable=self.home_folder, values=self.COMBO_CHOICES["home_folder"])
-        self.add_entry(row=5, label="Additional archiver options:", variable=self.additional_options)
-        self.add_entry(row=6, label="Excluded directories:", variable=self.excluded_directories)
-        self.add_entry_with_button(row=7, label="Command:", variable=self.command, bt_text="Execute", callback=self.cb_execute_command)
+        self.add_choose_directory(row=1, variable=self.archive_directory,
+                                  label="Destination directory:",
+                                  help="Choose the directory where the archive is going to be saved to.")
+
+        self.add_combobox(row=2, label="Archiver:", variable=self.archiver,
+                          values=self.COMBO_CHOICES["archiver"],
+                          help="Choose the archiver program.")
+
+        self.add_combobox(row=3, label="Compression:", variable=self.compression,
+                          values=self.COMBO_CHOICES["compression"],
+                          help="Choose the type of compression.")
+
+        self.add_combobox(row=4, label="Home directory:", variable=self.home_folder,
+                          values=self.COMBO_CHOICES["home_folder"],
+                          help="Choose what you want to do with the /home/* directory.")
+
+        self.add_entry(row=5, label="Additional options:",
+                       variable=self.additional_options,
+                       help="Add additional options that will be passed as arguments to the archiver program.")
+
+        self.add_entry(row=6, label="Exclude:", variable=self.excluded_directories,
+                       help="Specify paths of files and directories that you want to exclude from the archive.")
+
+        self.add_entry_with_button(row=7, label="Command:", variable=self.command,
+                                   bt_text="Execute", callback=self.cb_execute_command,
+                                   help="This is the command that will be executed.")
 
         self.columnconfigure(2, weight=1)
 
