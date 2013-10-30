@@ -397,14 +397,6 @@ class RestoreTab(NotebookTab):
         "disks": [""] + ["%s: %s" % (path, size) for path, size in get_disks().items()]
     }
 
-    ARGUMENTS = {
-        "tar": "-a tar",
-        "bsdtar": "-a bsdtar",
-        "grub": "-g",
-        "syslinux": "-S",
-        "": "",
-    }
-
     DESCRIPTION = (
         "This script will restore a backup image of your system or transfer this\n"
         "system in user defined partitions.\n"
@@ -519,7 +511,7 @@ class RestoreTab(NotebookTab):
                                    bt_text="Execute", callback=self.cb_execute_command,
                                    help="This is the command that will be executed.")
 
-        self.add_readonly_text(row=18, text=self.DESCRIPTION)
+        self.add_readonly_text(row=14, text=self.DESCRIPTION)
 
     def cb_gather_arguments(self, *args, **kwargs):
         arguments = ['%s -i cli -q' % self.SCRIPT_NAME]
