@@ -54,6 +54,11 @@ check_input() {
     BRSTOP="y"
   fi
 
+  if [ -n "$BRboth" ] && [ -z "$BRfile" ] && [ -z "$BRurl" ] && [ -z "$BRrestore" ]; then
+    echo -e "[${BR_YELLOW}WARNING${BR_NORM}] You must specify a backup file or enable transfer mode"
+    BRSTOP="y"
+  fi
+
   if [ -n "$BRfile" ] || [ -n "$BRurl" ] && [ -z "$BRarchiver" ]; then
     echo -e "[${BR_YELLOW}WARNING${BR_NORM}] You must specify archiver"
     BRSTOP="y"
@@ -515,11 +520,7 @@ fi
 
 check_input
 
-if [ -n "$BRroot" ] || [ -n "$BRhome" ] || [ -n "$BRboot" ] || [ -n "$BRother" ] || [ -n "$BRrootsubvol" ] || [ -n "$BRsubvolother" ] || [ -n "$BRgrub" ] || [ -n "$BRsyslinux" ] || [ -n "$BR_KERNEL_OPTS" ] || [ -n "$BR_MOUNT_OPTS" ] && [ -n "$BRarchiver" ]; then
-  BRmode="Restore"
-elif [ -n "$BRroot" ] || [ -n "$BRhome" ] || [ -n "$BRboot" ] || [ -n "$BRother" ] || [ -n "$BRrootsubvol" ] || [ -n "$BRsubvolother" ] || [ -n "$BRgrub" ] || [ -n "$BRsyslinux" ] || [ -n "$BR_KERNEL_OPTS" ] || [ -n "$BR_MOUNT_OPTS" ]; then
-  modelist=("Restore system from backup file" "Transfer this system using rsync")
-elif [ -n "$BRarchiver" ]; then
+if [ -n "$BRarchiver" ]; then
   modelist=("Backup this system using tar" "Restore system from backup file" )
 else
   modelist=("Backup this system using tar" "Restore system from backup file" "Transfer this system using rsync")
