@@ -504,15 +504,15 @@ class RestoreTab(NotebookTab):
 
         self.add_combobox(row=9, label="Home partition:", variable=self.home,
                           values=self.COMBO_CHOICES["partitions"],
-                          help="Optional. Choose the home partition (/home/).")
+                          help="Optional. Choose the home partition (/home).")
 
         self.add_combobox(row=10, label="Boot partition:", variable=self.boot,
                           values=self.COMBO_CHOICES["partitions"],
-                          help="Optional. Choose the boot partition (/home/).")
+                          help="Optional. Choose the boot partition (/boot).")
 
         self.add_combobox(row=11, label="Swap partition:", variable=self.swap,
                           values=self.COMBO_CHOICES["partitions"],
-                          help="Optional. Choose the swap partition (/home/).")
+                          help="Optional. Choose the swap partition.")
 
         self.add_entry(row=12, label="Custom partitions:",
                        variable=self.custom_partitions,
