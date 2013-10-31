@@ -474,13 +474,16 @@ class RestoreTab(NotebookTab):
     def create_UI(self):
         self.add_open_filename(row=1, variable=self.archive_path, state="normal",
                                label="Archive URI:",
-                               help="Choose the archive URI. It can be either a url or filepath.")
+                               help="Choose the archive URI. It can be either "
+                                    "a url or filepath.")
 
         self.add_entry(row=2, label="Username:", variable=self.username,
-                       help="Optional. Used for authentication when the archive is on the network.")
+                       help="Optional. Used for authentication when the "
+                            "archive is on the network.")
 
         self.add_entry(row=3, label="Password:", variable=self.password,
-                       help="Optional. Used for authentication when the archive is on the network.")
+                       help="Optional. Used for authentication when the "
+                            "archive is on the network.")
 
         self.add_combobox(row=4, label="Archiver:", variable=self.archiver,
                           values=self.COMBO_CHOICES["archiver"],
@@ -492,11 +495,13 @@ class RestoreTab(NotebookTab):
 
         self.add_combobox(row=6, label="Bootloader disk:", variable=self.bootloader_disk,
                           values=self.COMBO_CHOICES["disks"],
-                          help="Choose the disk where the bootloader will be installed.")
+                          help="Choose the disk where the bootloader will be "
+                               "installed.")
 
         self.add_entry(row=7, label="Kernel options.",
                        variable=self.kernel_options,
-                       help="Optional. Specify additional kernel options for SysLinux.")
+                       help="Optional. Specify additional kernel options for "
+                            "SysLinux.")
 
         self.add_combobox(row=8, label="Root partition:", variable=self.root,
                           values=self.COMBO_CHOICES["partitions"],
@@ -516,11 +521,13 @@ class RestoreTab(NotebookTab):
 
         self.add_entry(row=12, label="Custom partitions:",
                        variable=self.custom_partitions,
-                       help="Specify custom partitions for fstab. The syntax is 'mountpoint=device' (e.g. '/mnt/data=/dev/sda2').")
+                       help="Specify custom partitions for fstab. The syntax is"
+                            "'mountpoint=device' (e.g. '/mnt/data=/dev/sda2').")
 
         self.add_entry(row=13, label="Mount options:",
                        variable=self.mount_options,
-                       help="Specify a comma separated list of mount options for the root partition.")
+                       help="Specify a comma separated list of mount options "
+                            "for the root partition.")
 
         self.add_entry_with_button(row=14, label="Command:", variable=self.command,
                                    bt_text="Execute", callback=self.cb_execute_command,
