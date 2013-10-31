@@ -420,7 +420,7 @@ class RestoreTab(NotebookTab):
         variable_names = (
             "archive_path username password archiver bootloader bootloader_disk "
             "kernel_options root home boot swap custom_partitions mount_options "
-            "command")
+            "command btrfs_root btrfs_other")
         for name in variable_names.split():
             self.add_tk_variable(name, self.cb_gather_arguments)
 
@@ -488,11 +488,17 @@ class RestoreTab(NotebookTab):
                        help="Specify a comma separated list of mount options "
                             "for the root partition.")
 
-        self.add_entry_with_button(row=14, label="Command:", variable=self.command,
+        self.add_entry(row=14, label="BTRFS root:", variable=self.btrfs_root,
+                       help="Specify the subvolume name for /")
+
+        self.add_entry(row=15, label="BTRFS other:", variable=self.btrfs_other,
+                       help="Specify other subvolumes (e.g. /home /var /usr etc).")
+
+        self.add_entry_with_button(row=16, label="Command:", variable=self.command,
                                    bt_text="Execute", callback=self.cb_execute_command,
                                    help="This is the command that will be executed.")
 
-        self.add_readonly_text(row=15, text=self.DESCRIPTION)
+        self.add_readonly_text(row=17, text=self.DESCRIPTION)
 
         self.columnconfigure(2, weight=1)
 
@@ -512,6 +518,8 @@ class RestoreTab(NotebookTab):
         swap = self.swap.get()
         custom_partitions = self.custom_partitions.get()
         mount_options = self.mount_options.get()
+        btrfs_root = self.btrfs_root.get()
+        btrfs_other = self.btrfs_other.get()
 
         arguments.append("-f '%s'" % archive_path if archive_path else "")
         arguments.append("-n %s" % username if username else "")
@@ -525,6 +533,8 @@ class RestoreTab(NotebookTab):
         arguments.append("-s %s" % swap.split(": ")[0] if swap else "")
         arguments.append("-c '%s'" % custom_partitions if custom_partitions else "")
         arguments.append("-m '%s'" % mount_options if mount_options else "")
+        arguments.append("-R '%s'" % btrfs_root if btrfs_root else "")
+        arguments.append("-O '%s'" % btrfs_other if btrfs_other else "")
 
         # remove empty arguments
         arguments = [arg.strip() for arg in arguments if arg]
