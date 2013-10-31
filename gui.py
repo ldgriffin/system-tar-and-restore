@@ -215,13 +215,7 @@ class FormLayoutMixin(object):
 
 class NotebookTab(ttk.Frame, FormLayoutMixin):
     def __init__(self, parent):
-        # In Python 2 we can't use super() because the Tkinter objects derive
-        # from old-style classes. In Python 3 using "ttk.Frame.__init__()"
-        # seems to work ok, but better be safe than sorry :P
-        if PY_VERSION < 3:
-            ttk.Frame.__init__(self, parent)
-        else:
-            super(NotebookTab, self).__init__(parent)
+        ttk.Frame.__init__(self, parent)
         self.parent = parent
 
         # set theming
@@ -318,13 +312,7 @@ class BackupTab(NotebookTab):
         " -> Fedora: syslinux syslinux-extlinux\n")
 
     def __init__(self, parent):
-        # In Python 2 we can't use super() because the Tkinter objects derive
-        # from old-style classes. In Python 3 using "ttk.Frame.__init__()"
-        # seems to work ok, but better be safe than sorry :P
-        if PY_VERSION < 3:
-            NotebookTab.__init__(self, parent)
-        else:
-            super(BackupTab, self).__init__(parent)
+        NotebookTab.__init__(self, parent)
         self.parent = parent
 
         # create variables
@@ -425,13 +413,7 @@ class RestoreTab(NotebookTab):
 
 
     def __init__(self, parent):
-        # In Python 2 we can't use super() because the Tkinter objects derive
-        # from old-style classes. In Python 3 using "ttk.Frame.__init__()"
-        # seems to work ok, but better be safe than sorry :P
-        if PY_VERSION < 3:
-            NotebookTab.__init__(self, parent)
-        else:
-            super(RestoreTab, self).__init__(parent)
+        NotebookTab.__init__(self, parent)
         self.parent = parent
 
         # create variables
