@@ -512,6 +512,7 @@ class RestoreTab(NotebookTab):
                                    help="This is the command that will be executed.")
 
         self.add_readonly_text(row=14, text=self.DESCRIPTION)
+        self.columnconfigure(2, weight=1)
 
     def cb_gather_arguments(self, *args, **kwargs):
         arguments = ['%s -i cli -q' % self.SCRIPT_NAME]
