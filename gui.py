@@ -229,6 +229,18 @@ class NotebookTab(ttk.Frame, FormLayoutMixin):
         self.style.theme_use("default")
         self.pack(fill="both", expand=1)
 
+    def add_tk_variable(self, name, callback, tk_type=tk.StringVar):
+        """
+        Adds a Tk.StringVar() to the local namespace and traces it with a
+        callback function.
+        """
+        d = self.__dict__
+        if name in d:
+            raise ValueError("attribute already exists: <%s>" % name)
+        variable = d[name] = tk_type()
+        variable.trace("w", callback)
+
+
     def create_UI(self, *args, **kwargs):
         raise NotImplementedError("You must implemement in subclasses!")
 
@@ -315,32 +327,18 @@ class BackupTab(NotebookTab):
             super(BackupTab, self).__init__(parent)
         self.parent = parent
 
-        # Create Tkinter Control Variables
-        # NOTE: You can't initialize their values here!
-        self.archive_directory = tk.StringVar()
-        self.archiver = tk.StringVar()
-        self.compression = tk.StringVar()
-        self.home_folder = tk.StringVar()
-        self.additional_options = tk.StringVar()
-        self.excluded_directories = tk.StringVar()
-        self.command = tk.StringVar()
-
-        # Trace the Tkinter Control Variables!
-        # http://stackoverflow.com/a/6549535/592289
-        self.archive_directory.trace("w", self.cb_gather_arguments)
-        self.archiver.trace("w", self.cb_gather_arguments)
-        self.compression.trace("w", self.cb_gather_arguments)
-        self.home_folder.trace("w", self.cb_gather_arguments)
-        self.additional_options.trace("w", self.cb_gather_arguments)
-        self.excluded_directories.trace("w", self.cb_gather_arguments)
+        # create variables
+        variable_names = (
+            "archive_directory archiver compression home_folder "
+            "additional_options excluded_directories command")
+        for name in variable_names.split():
+            self.add_tk_variable(name, self.cb_gather_arguments)
 
         # Set default values to the Tkinter Variables
         self.archive_directory.set(os.path.expandvars("$HOME"))
         self.archiver.set("tar")
         self.compression.set("gzip")
         self.home_folder.set(self.COMBO_CHOICES["home_folder"][0])
-        self.additional_options.set("")
-        self.excluded_directories.set("")
 
         self.create_UI()
 
@@ -436,36 +434,15 @@ class RestoreTab(NotebookTab):
             super(RestoreTab, self).__init__(parent)
         self.parent = parent
 
-        self.archive_path = tk.StringVar()
-        self.username = tk.StringVar()
-        self.password = tk.StringVar()
-        self.archiver = tk.StringVar()
-        self.bootloader = tk.StringVar()
-        self.bootloader_disk = tk.StringVar()
-        self.kernel_options = tk.StringVar()
-        self.root = tk.StringVar()
-        self.home = tk.StringVar()
-        self.boot = tk.StringVar()
-        self.swap = tk.StringVar()
-        self.custom_partitions = tk.StringVar()
-        self.mount_options = tk.StringVar()
-        self.command = tk.StringVar()
+        # create variables
+        variable_names = (
+            "archive_path username password archiver bootloader bootloader_disk "
+            "kernel_options root home boot swap custom_partitions mount_options "
+            "command")
+        for name in variable_names.split():
+            self.add_tk_variable(name, self.cb_gather_arguments)
 
-        self.archive_path.trace("w", self.cb_gather_arguments)
-        self.username.trace("w", self.cb_gather_arguments)
-        self.password.trace("w", self.cb_gather_arguments)
-        self.archiver.trace("w", self.cb_gather_arguments)
-        self.bootloader.trace("w", self.cb_gather_arguments)
-        self.bootloader_disk.trace("w", self.cb_gather_arguments)
-        self.kernel_options.trace("w", self.cb_gather_arguments)
-        self.root.trace("w", self.cb_gather_arguments)
-        self.home.trace("w", self.cb_gather_arguments)
-        self.boot.trace("w", self.cb_gather_arguments)
-        self.swap.trace("w", self.cb_gather_arguments)
-        self.custom_partitions.trace("w", self.cb_gather_arguments)
-        self.mount_options.trace("w", self.cb_gather_arguments)
-        self.command.trace("w", self.cb_gather_arguments)
-
+        # set defaults
         self.archiver.set("tar")
         self.bootloader.set("grub")
 
