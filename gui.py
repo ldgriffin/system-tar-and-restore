@@ -516,7 +516,7 @@ class RestoreTab(NotebookTab):
 
         self.add_entry(row=12, label="Custom partitions:",
                        variable=self.custom_partitions,
-                       help="Specify custom partitions for fstab. The syntax is 'mountpoint=device' (e.g. '/dev/sda2=/mnt/data').")
+                       help="Specify custom partitions for fstab. The syntax is 'mountpoint=device' (e.g. '/mnt/data=/dev/sda2').")
 
         self.add_entry(row=13, label="Mount options:",
                        variable=self.mount_options,
@@ -547,22 +547,18 @@ class RestoreTab(NotebookTab):
         custom_partitions = self.custom_partitions.get()
         mount_options = self.mount_options.get()
 
-        if archive_path.startswith("http"):
-            arguments.append("-u %s" % archive_path)
-        else:
-            arguments.append("-f %s" % archive_path)
-
+        arguments.append("-f '%s'" % archive_path if archive_path else "")
         arguments.append("-n %s" % username if username else "")
         arguments.append("-p %s" % password if password else "")
         arguments.append("-a %s" % archiver)
         arguments.append(("-g %s" if bootloader == "grub" else "-S %s") % bootloader_disk)
-        arguments.append("-k %s" % kernel_options if kernel_options else "")
+        arguments.append("-k '%s'" % kernel_options if kernel_options else "")
         arguments.append("-r %s" % root.split(": ")[0] if root else "")
         arguments.append("-h %s" % home.split(": ")[0] if home else "")
         arguments.append("-b %s" % boot.split(": ")[0] if boot else "")
         arguments.append("-s %s" % swap.split(": ")[0] if swap else "")
-        arguments.append("-c %s" % custom_partitions if custom_partitions else "")
-        arguments.append("-m %s" % mount_options if mount_options else "")
+        arguments.append("-c '%s'" % custom_partitions if custom_partitions else "")
+        arguments.append("-m '%s'" % mount_options if mount_options else "")
 
         # remove empty arguments
         arguments = [arg.strip() for arg in arguments if arg]
