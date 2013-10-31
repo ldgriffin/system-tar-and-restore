@@ -29,6 +29,12 @@ else:
 
 
 def get_disks():
+    pattern = re.compile(r"^/dev/[sh]d[a-z]$|^/dev/md\d+$")
+    potential_disks = ["/dev/" + path for path in sorted(os.listdir("/dev/"))]
+    disks = [disk for disk in potential_disks if pattern.match(disk)]
+    return disks
+
+
 def get_partitions():
     get_size = lambda disk: subprocess.check_output(shlex.split("lsblk -d -n -o size %s" % disk))[:-1]
 
@@ -397,6 +403,7 @@ class RestoreTab(NotebookTab):
         "archiver": ("tar", "bsdtar"),
         "bootloader": ("grub", "syslinux"),
         "partitions": [""] + ["%s: %s" % (path, size) for path, size in get_partitions().items()],
+        "disks": [""] + get_disks(),
     }
 
     DESCRIPTION = (
@@ -434,6 +441,7 @@ class RestoreTab(NotebookTab):
         self.password = tk.StringVar()
         self.archiver = tk.StringVar()
         self.bootloader = tk.StringVar()
+        self.bootloader_disk = tk.StringVar()
         self.kernel_options = tk.StringVar()
         self.root = tk.StringVar()
         self.home = tk.StringVar()
@@ -448,6 +456,7 @@ class RestoreTab(NotebookTab):
         self.password.trace("w", self.cb_gather_arguments)
         self.archiver.trace("w", self.cb_gather_arguments)
         self.bootloader.trace("w", self.cb_gather_arguments)
+        self.bootloader_disk.trace("w", self.cb_gather_arguments)
         self.kernel_options.trace("w", self.cb_gather_arguments)
         self.root.trace("w", self.cb_gather_arguments)
         self.home.trace("w", self.cb_gather_arguments)
@@ -481,43 +490,44 @@ class RestoreTab(NotebookTab):
                           values=self.COMBO_CHOICES["bootloader"],
                           help="Choose the bootloader.")
 
-        self.add_entry(row=6, label="Kernel options.",
+        self.add_combobox(row=6, label="Bootloader disk:", variable=self.bootloader_disk,
+                          values=self.COMBO_CHOICES["disks"],
+                          help="Choose the disk where the bootloader will be installed.")
+
+        self.add_entry(row=7, label="Kernel options.",
                        variable=self.kernel_options,
                        help="Optional. Specify additional kernel options for SysLinux.")
 
-        self.add_combobox(row=7, label="Root partition:", variable=self.root,
-                          values=self.COMBO_CHOICES["disks"],
+        self.add_combobox(row=8, label="Root partition:", variable=self.root,
                           values=self.COMBO_CHOICES["partitions"],
                           help="Choose the root partition (/).")
 
-        self.add_combobox(row=8, label="Home partition:", variable=self.home,
-                          values=self.COMBO_CHOICES["disks"],
+        self.add_combobox(row=9, label="Home partition:", variable=self.home,
                           values=self.COMBO_CHOICES["partitions"],
                           help="Optional. Choose the home partition (/home/).")
 
-        self.add_combobox(row=9, label="Boot partition:", variable=self.boot,
-                          values=self.COMBO_CHOICES["disks"],
+        self.add_combobox(row=10, label="Boot partition:", variable=self.boot,
                           values=self.COMBO_CHOICES["partitions"],
                           help="Optional. Choose the boot partition (/home/).")
 
-        self.add_combobox(row=10, label="Swap partition:", variable=self.swap,
-                          values=self.COMBO_CHOICES["disks"],
+        self.add_combobox(row=11, label="Swap partition:", variable=self.swap,
                           values=self.COMBO_CHOICES["partitions"],
                           help="Optional. Choose the swap partition (/home/).")
 
-        self.add_entry(row=11, label="Custom partitions:",
+        self.add_entry(row=12, label="Custom partitions:",
                        variable=self.custom_partitions,
                        help="Specify custom partitions for fstab. The syntax is 'mountpoint=device' (e.g. '/dev/sda2=/mnt/data').")
 
-        self.add_entry(row=12, label="Mount options:",
+        self.add_entry(row=13, label="Mount options:",
                        variable=self.mount_options,
                        help="Specify a comma separated list of mount options for the root partition.")
 
-        self.add_entry_with_button(row=13, label="Command:", variable=self.command,
+        self.add_entry_with_button(row=14, label="Command:", variable=self.command,
                                    bt_text="Execute", callback=self.cb_execute_command,
                                    help="This is the command that will be executed.")
 
-        self.add_readonly_text(row=14, text=self.DESCRIPTION)
+        self.add_readonly_text(row=15, text=self.DESCRIPTION)
+
         self.columnconfigure(2, weight=1)
 
     def cb_gather_arguments(self, *args, **kwargs):
@@ -528,6 +538,7 @@ class RestoreTab(NotebookTab):
         password = self.password.get()
         archiver = self.archiver.get()
         bootloader = self.bootloader.get()
+        bootloader_disk = self.bootloader_disk.get()
         kernel_options = self.kernel_options.get()
         root = self.root.get()
         home = self.home.get()
@@ -544,7 +555,7 @@ class RestoreTab(NotebookTab):
         arguments.append("-n %s" % username if username else "")
         arguments.append("-p %s" % password if password else "")
         arguments.append("-a %s" % archiver)
-        arguments.append("-g" if bootloader == "grub" else "-S")
+        arguments.append(("-g %s" if bootloader == "grub" else "-S %s") % bootloader_disk)
         arguments.append("-k %s" % kernel_options if kernel_options else "")
         arguments.append("-r %s" % root.split(": ")[0] if root else "")
         arguments.append("-h %s" % home.split(": ")[0] if home else "")
