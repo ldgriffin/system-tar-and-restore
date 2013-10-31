@@ -29,15 +29,17 @@ else:
 
 
 def get_disks():
+def get_partitions():
     get_size = lambda disk: subprocess.check_output(shlex.split("lsblk -d -n -o size %s" % disk))[:-1]
 
-    pattern = re.compile( r"^/dev/[sh]d[a-z]\d+$|^/dev/md\d+$|^/dev/mapper/\w+-\w+$")
+    pattern = re.compile(r"^/dev/[sh]d[a-z]\d+$|^/dev/md\d+$|^/dev/mapper/\w+-\w+$")
 
-    potential_disks = ["/dev/" + path for path in sorted(os.listdir("/dev/"))] +\
+    potential_partitions = ["/dev/" + path for path in sorted(os.listdir("/dev/"))] +\
                       ["/dev/mapper/" + path for path in sorted(os.listdir("/dev/mapper/"))]
 
-    disks = ((disk, get_size(disk)) for disk in potential_disks if pattern.match(disk))
-    return OrderedDict(disks)
+    partitions = ((path, get_size(path)) for path in potential_partitions if pattern.match(path))
+
+    return OrderedDict(partitions)
 
 #Tooltip code adopted from:
 #https://github.com/python/cpython/blob/3ae6caaaa321edabe7baf9f2dbfe9b9f222ac628/Lib/idlelib/ToolTip.py
@@ -394,7 +396,7 @@ class RestoreTab(NotebookTab):
     COMBO_CHOICES = {
         "archiver": ("tar", "bsdtar"),
         "bootloader": ("grub", "syslinux"),
-        "disks": [""] + ["%s: %s" % (path, size) for path, size in get_disks().items()]
+        "partitions": [""] + ["%s: %s" % (path, size) for path, size in get_partitions().items()],
     }
 
     DESCRIPTION = (
@@ -485,18 +487,22 @@ class RestoreTab(NotebookTab):
 
         self.add_combobox(row=7, label="Root partition:", variable=self.root,
                           values=self.COMBO_CHOICES["disks"],
+                          values=self.COMBO_CHOICES["partitions"],
                           help="Choose the root partition (/).")
 
         self.add_combobox(row=8, label="Home partition:", variable=self.home,
                           values=self.COMBO_CHOICES["disks"],
+                          values=self.COMBO_CHOICES["partitions"],
                           help="Optional. Choose the home partition (/home/).")
 
         self.add_combobox(row=9, label="Boot partition:", variable=self.boot,
                           values=self.COMBO_CHOICES["disks"],
+                          values=self.COMBO_CHOICES["partitions"],
                           help="Optional. Choose the boot partition (/home/).")
 
         self.add_combobox(row=10, label="Swap partition:", variable=self.swap,
                           values=self.COMBO_CHOICES["disks"],
+                          values=self.COMBO_CHOICES["partitions"],
                           help="Optional. Choose the swap partition (/home/).")
 
         self.add_entry(row=11, label="Custom partitions:",
