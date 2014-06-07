@@ -278,7 +278,7 @@ class BackupTab(NotebookTab):
 
     COMBO_CHOICES = {
         "archiver": ("tar", "bsdtar"),
-        "compression": ("gzip", "xz"),
+        "compression": ("gzip", "bzip2", "xz"),
         "home_folder": ("Include /home/*",
                         "Only include /home/*'s hidden files and directories.",
                         "Exclude /home/*"),
@@ -289,6 +289,7 @@ class BackupTab(NotebookTab):
         "Only include /home/*'s hidden files and directories.": "-h",
         "Exclude /home/*": "-h -n",
         "gzip": "-c gzip",
+        "bzip2": "-c bzip2",
         "xz": "-c xz",
         "tar": "-a tar",
         "bsdtar": "-a bsdtar",
@@ -302,14 +303,16 @@ class BackupTab(NotebookTab):
         " ==> Also make sure you have GRUB or SYSLINUX packages installed.\n"
         "\n"
         "GRUB PACKAGES:\n"
-        " -> Arch: grub-bios\n"
-        " -> Debian: grub-pc\n"
-        " -> Fedora: grub2\n"
+        " -> Arch:   grub    efibootmgr* dosfstools*\n"
+        " -> Debian: grub-pc grub-efi*   dosfstools*\n"
+        " -> Fedora: grub2   efibootmgr* dosfstools*\n"
         "\n"
         "SYSLINUX PACKAGES:\n"
-        " -> Arch: syslinux\n"
+        " -> Arch:   syslinux\n"
         " -> Debian: syslinux extlinux\n"
-        " -> Fedora: syslinux syslinux-extlinux\n")
+        " -> Fedora: syslinux syslinux-extlinux\n\n"
+        "*Required for UEFI systems")
+
 
     def __init__(self, parent):
         NotebookTab.__init__(self, parent)
@@ -317,8 +320,9 @@ class BackupTab(NotebookTab):
 
         # create variables
         variable_names = (
-            "archive_directory archiver compression home_folder "
+            "archive_directory additional_name archiver compression home_folder "
             "additional_options excluded_directories command")
+
         for name in variable_names.split():
             self.add_tk_variable(name, self.cb_gather_arguments)
 
@@ -335,41 +339,49 @@ class BackupTab(NotebookTab):
                                   label="Destination directory:",
                                   help="Choose the directory where the archive is going to be saved to.")
 
-        self.add_combobox(row=2, label="Archiver:", variable=self.archiver,
-                          values=self.COMBO_CHOICES["archiver"],
-                          help="Choose the archiver program.")
+        self.add_entry(row=2, label="Filename:",
+                       variable=self.additional_name,
+                       help="Optional. Choose additional backup file name (without extension).")
 
-        self.add_combobox(row=3, label="Compression:", variable=self.compression,
+        self.add_combobox(row=3, label="Archiver:", variable=self.archiver,
+                          values=self.COMBO_CHOICES["archiver"],
+                          help="Choose the archiver.")
+
+        self.add_combobox(row=4, label="Compression:", variable=self.compression,
                           values=self.COMBO_CHOICES["compression"],
                           help="Choose the type of compression.")
 
-        self.add_combobox(row=4, label="Home directory:", variable=self.home_folder,
+        self.add_combobox(row=5, label="Home directory:", variable=self.home_folder,
                           values=self.COMBO_CHOICES["home_folder"],
                           help="Choose what you want to do with the /home/* directory.")
 
-        self.add_entry(row=5, label="Additional options:",
+        self.add_entry(row=6, label="Additional options:",
                        variable=self.additional_options,
-                       help="Add additional options that will be passed as arguments to the archiver program.")
+                       help="Optional. Add additional options that will be passed as arguments to the archiver.")
 
-        self.add_entry(row=6, label="Exclude:", variable=self.excluded_directories,
-                       help="Specify paths of files and directories that you want to exclude from the archive.")
+        self.add_entry(row=7, label="Exclude:", variable=self.excluded_directories,
+                       help="Optional. Specify paths of files and directories that you want to exclude from the archive.")
 
-        self.add_entry_with_button(row=7, label="Command:", variable=self.command,
+        self.add_entry_with_button(row=8, label="Command:", variable=self.command,
                                    bt_text="Execute", callback=self.cb_execute_command,
                                    help="This is the command that will be executed.")
 
-        self.add_readonly_text(row=8, text=self.DESCRIPTION)
+        self.add_readonly_text(row=9, text=self.DESCRIPTION)
 
         self.columnconfigure(2, weight=1)
 
     def cb_gather_arguments(self, *args, **kwargs):
-        arguments = ['%s -i cli -q -d "%s"' % (self.SCRIPT_NAME, self.archive_directory.get())]
+        arguments = ['%s -i cli -d "%s"' % (self.SCRIPT_NAME, self.archive_directory.get())]
         for variable in (self.archiver, self.compression, self.home_folder):
             arguments.append(self.ARGUMENTS[variable.get()])
 
         additional_options = self.additional_options.get().strip()
         if additional_options:
             additional_options = " ".join(option for option in additional_options.split())
+
+        additional_name = self.additional_name.get().strip()
+        if additional_name:
+            additional_name = " ".join(option for option in additional_name.split())
 
         excluded_dirs = self.excluded_directories.get().strip()
         if excluded_dirs:
@@ -379,6 +391,10 @@ class BackupTab(NotebookTab):
             sep = " " if additional_options and excluded_dirs else ""
             arguments.append('-u "%s"' % sep.join((additional_options, excluded_dirs)))
 
+        if additional_name:
+            sep = "" if additional_name else ""
+            arguments.append('-f "%s"' % sep.join((additional_name)))
+
         self.command.set(" ".join(arguments))
 
 
@@ -387,29 +403,16 @@ class RestoreTab(NotebookTab):
 
     COMBO_CHOICES = {
         "archiver": ("tar", "bsdtar"),
-        "bootloader": ("grub", "syslinux"),
         "partitions": [""] + ["%s: %s" % (path, size) for path, size in get_partitions().items()],
         "disks": [""] + get_disks(),
     }
 
     DESCRIPTION = (
-        "This script will restore a backup image of your system or transfer this\n"
-        "system in user defined partitions.\n"
-        "\n"
-        "==> Make sure you have created and formatted at least one partition\n"
-        "for root (/) and optionally partitions for /home and /boot.\n"
-        "\n"
+        "This mode will restore a backup image of your system in user defined partitions.\n\n"
+        "==> Make sure you have created one target root (/) partition. Optionally\nyou can create or use any other partition (/boot /home /var etc).\n\n"
+      
         "==> Make sure that target LVM volume groups are activated and target\n"
-        "RAID arrays are properly assembled.\n"
-        "\n"
-        "==> If you didn't include /home directory in the backup and you already\n"
-        "have a seperate /home partition, simply enter it when prompted.\n"
-        "\n"
-        "==> Also make sure that this system and the system you want to restore\n"
-        "have the same architecture.\n"
-        "\n"
-        "==> In case of GNU tar, Fedora backups can only be restored from a Fedora\n"
-        "enviroment, due to extra tar options.\n")
+        "RAID arrays are properly assembled.\n")
 
 
     def __init__(self, parent):
@@ -418,15 +421,14 @@ class RestoreTab(NotebookTab):
 
         # create variables
         variable_names = (
-            "archive_path username password archiver bootloader bootloader_disk "
-            "kernel_options root home boot swap custom_partitions mount_options "
+            "archive_path username password archiver grub_disk syslinux_disk "
+            "kernel_options archiver_options root home boot swap custom_partitions mount_options "
             "command btrfs_root btrfs_other")
         for name in variable_names.split():
             self.add_tk_variable(name, self.cb_gather_arguments)
 
         # set defaults
         self.archiver.set("tar")
-        self.bootloader.set("grub")
 
         self.create_UI()
 
@@ -446,72 +448,76 @@ class RestoreTab(NotebookTab):
 
         self.add_combobox(row=4, label="Archiver:", variable=self.archiver,
                           values=self.COMBO_CHOICES["archiver"],
-                          help="Choose the archiver program.")
+                          help="Choose the archiver you used to create the backup archive.")
 
-        self.add_combobox(row=5, label="Bootloader:", variable=self.bootloader,
-                          values=self.COMBO_CHOICES["bootloader"],
-                          help="Choose the bootloader.")
+        self.add_entry(row=5, label="Archiver options:",
+                       variable=self.archiver_options,
+                       help="Optional. Specify additional archiver options.\nIf the target system is Fedora 19+, you should add --selinux --acls --xattrs-include='*' ")
 
-        self.add_combobox(row=6, label="Bootloader disk:", variable=self.bootloader_disk,
+        self.add_combobox(row=6, label="Grub disk:", variable=self.grub_disk,
                           values=self.COMBO_CHOICES["disks"],
-                          help="Choose the disk where the bootloader will be "
-                               "installed.")
+                          help="Optional. Choose disk for grub.")
 
-        self.add_entry(row=7, label="Kernel options.",
+        self.add_combobox(row=7, label="Syslinux disk:", variable=self.syslinux_disk,
+                          values=self.COMBO_CHOICES["disks"],
+                          help="Optional. Choose disk for syslinux.")
+
+        self.add_entry(row=8, label="Kernel options:",
                        variable=self.kernel_options,
                        help="Optional. Specify additional kernel options for "
                             "SysLinux.")
 
-        self.add_combobox(row=8, label="Root partition:", variable=self.root,
+        self.add_combobox(row=9, label="Root partition:", variable=self.root,
                           values=self.COMBO_CHOICES["partitions"],
-                          help="Choose the root partition (/).")
+                          help="Choose the target root partition (/).")
 
-        self.add_combobox(row=9, label="Home partition:", variable=self.home,
+        self.add_combobox(row=10, label="Home partition:", variable=self.home,
                           values=self.COMBO_CHOICES["partitions"],
-                          help="Optional. Choose the home partition (/home).")
+                          help="Optional. Choose the target home partition (/home).")
 
-        self.add_combobox(row=10, label="Boot partition:", variable=self.boot,
+        self.add_combobox(row=11, label="Boot partition:", variable=self.boot,
                           values=self.COMBO_CHOICES["partitions"],
-                          help="Optional. Choose the boot partition (/boot).")
+                          help="Optional. Choose the target boot partition (/boot).")
 
-        self.add_combobox(row=11, label="Swap partition:", variable=self.swap,
+        self.add_combobox(row=12, label="Swap partition:", variable=self.swap,
                           values=self.COMBO_CHOICES["partitions"],
                           help="Optional. Choose the swap partition.")
 
-        self.add_entry(row=12, label="Custom partitions:",
+        self.add_entry(row=13, label="Custom partitions:",
                        variable=self.custom_partitions,
-                       help="Specify custom partitions for fstab. The syntax is"
-                            "'mountpoint=device' (e.g. '/mnt/data=/dev/sda2').")
+                       help="Optional. Specify custom target partitions. The syntax is "
+                            "'mountpoint=device' (e.g. '/var=/dev/sda2').")
 
-        self.add_entry(row=13, label="Mount options:",
+        self.add_entry(row=14, label="Mount options:",
                        variable=self.mount_options,
-                       help="Specify a comma separated list of mount options "
+                       help="Optional. Specify a comma separated list of mount options "
                             "for the root partition.")
 
-        self.add_entry(row=14, label="BTRFS root:", variable=self.btrfs_root,
-                       help="Specify the subvolume name for /")
+        self.add_entry(row=15, label="BTRFS root:", variable=self.btrfs_root,
+                       help="Optional. Specify the subvolume name for /")
 
-        self.add_entry(row=15, label="BTRFS other:", variable=self.btrfs_other,
-                       help="Specify other subvolumes (e.g. /home /var /usr etc).")
+        self.add_entry(row=16, label="BTRFS other:", variable=self.btrfs_other,
+                       help="Optional. Specify other subvolumes (e.g. /home /var /usr etc).")
 
-        self.add_entry_with_button(row=16, label="Command:", variable=self.command,
+        self.add_entry_with_button(row=17, label="Command:", variable=self.command,
                                    bt_text="Execute", callback=self.cb_execute_command,
                                    help="This is the command that will be executed.")
 
-        self.add_readonly_text(row=17, text=self.DESCRIPTION)
+        self.add_readonly_text(row=18, text=self.DESCRIPTION)
 
         self.columnconfigure(2, weight=1)
 
     def cb_gather_arguments(self, *args, **kwargs):
-        arguments = ['%s -i cli -q' % self.SCRIPT_NAME]
+        arguments = ['%s -i cli' % self.SCRIPT_NAME]
 
         archive_path = self.archive_path.get()
         username = self.username.get()
         password = self.password.get()
         archiver = self.archiver.get()
-        bootloader = self.bootloader.get()
-        bootloader_disk = self.bootloader_disk.get()
+        syslinux_disk = self.syslinux_disk.get()
+        grub_disk = self.grub_disk.get()
         kernel_options = self.kernel_options.get()
+        archiver_options = self.archiver_options.get()
         root = self.root.get()
         home = self.home.get()
         boot = self.boot.get()
@@ -522,11 +528,13 @@ class RestoreTab(NotebookTab):
         btrfs_other = self.btrfs_other.get()
 
         arguments.append("-f '%s'" % archive_path if archive_path else "")
-        arguments.append("-n %s" % username if username else "")
-        arguments.append("-p %s" % password if password else "")
+        arguments.append("-n '%s'" % username if username else "")
+        arguments.append("-p '%s'" % password if password else "")
         arguments.append("-a %s" % archiver)
-        arguments.append(("-g %s" if bootloader == "grub" else "-S %s") % bootloader_disk)
+        arguments.append("-S %s" % syslinux_disk.split(": ")[0] if syslinux_disk else "")
+        arguments.append("-g %s" % grub_disk.split(": ")[0] if grub_disk else "")
         arguments.append("-k '%s'" % kernel_options if kernel_options else "")
+        arguments.append("-U '%s'" % archiver_options if archiver_options else "")
         arguments.append("-r %s" % root.split(": ")[0] if root else "")
         arguments.append("-h %s" % home.split(": ")[0] if home else "")
         arguments.append("-b %s" % boot.split(": ")[0] if boot else "")
@@ -540,6 +548,143 @@ class RestoreTab(NotebookTab):
         arguments = [arg.strip() for arg in arguments if arg]
 
         self.command.set(" ".join(arguments))
+
+class TransferTab(NotebookTab):
+    SCRIPT_NAME = "restore.sh"
+
+    COMBO_CHOICES = {
+        "archiver": ("tar", "bsdtar"),
+        "partitions": [""] + ["%s: %s" % (path, size) for path, size in get_partitions().items()],
+        "disks": [""] + get_disks(),
+    }
+
+    DESCRIPTION = (
+        "This mode will transfer this system in user defined partitions.\n\n"
+        "==> Make sure you have created one target root (/) partition. Optionally\nyou can create or use any other partition (/boot /home /var etc).\n\n"
+      
+        "==> Make sure that target LVM volume groups are activated and target\n"
+        "RAID arrays are properly assembled.\n")
+
+
+    def __init__(self, parent):
+        NotebookTab.__init__(self, parent)
+        self.parent = parent
+
+        # create variables
+        variable_names = (
+            "archiver grub_disk syslinux_disk "
+            "kernel_options archiver_options root home boot swap custom_partitions mount_options "
+            "command btrfs_root btrfs_other")
+        for name in variable_names.split():
+            self.add_tk_variable(name, self.cb_gather_arguments)
+
+        # set defaults
+        self.archiver.set("tar")
+
+        self.create_UI()
+
+    def create_UI(self):
+     
+
+        self.add_combobox(row=1, label="Archiver:", variable=self.archiver,
+                          values=self.COMBO_CHOICES["archiver"],
+                          help="Choose the archiver.")
+
+        self.add_entry(row=2, label="Rsync options:",
+                       variable=self.archiver_options,
+                       help="Optional. Specify additional rsync options.")
+
+        self.add_combobox(row=3, label="Grub disk:", variable=self.grub_disk,
+                          values=self.COMBO_CHOICES["disks"],
+                          help="Optional. Choose disk for grub.")
+
+        self.add_combobox(row=4, label="Syslinux disk:", variable=self.syslinux_disk,
+                          values=self.COMBO_CHOICES["disks"],
+                          help="Optional. Choose disk for syslinux.")
+
+        self.add_entry(row=5, label="Kernel options:",
+                       variable=self.kernel_options,
+                       help="Optional. Specify additional kernel options for "
+                            "SysLinux.")
+
+        self.add_combobox(row=6, label="Root partition:", variable=self.root,
+                          values=self.COMBO_CHOICES["partitions"],
+                          help="Choose the target root partition (/).")
+
+        self.add_combobox(row=7, label="Home partition:", variable=self.home,
+                          values=self.COMBO_CHOICES["partitions"],
+                          help="Optional. Choose the target home partition (/home).")
+
+        self.add_combobox(row=8, label="Boot partition:", variable=self.boot,
+                          values=self.COMBO_CHOICES["partitions"],
+                          help="Optional. Choose the target boot partition (/boot).")
+
+        self.add_combobox(row=9, label="Swap partition:", variable=self.swap,
+                          values=self.COMBO_CHOICES["partitions"],
+                          help="Optional. Choose the swap partition.")
+
+        self.add_entry(row=10, label="Custom partitions:",
+                       variable=self.custom_partitions,
+                       help="Optional. Specify custom target partitions. The syntax is "
+                            "'mountpoint=device' (e.g. '/var=/dev/sda2').")
+
+        self.add_entry(row=11, label="Mount options:",
+                       variable=self.mount_options,
+                       help="Optional. Specify a comma separated list of mount options "
+                            "for the root partition.")
+
+        self.add_entry(row=12, label="BTRFS root:", variable=self.btrfs_root,
+                       help="Optional. Specify the subvolume name for /")
+
+        self.add_entry(row=13, label="BTRFS other:", variable=self.btrfs_other,
+                       help="Optional. Specify other subvolumes (e.g. /home /var /usr etc).")
+
+        self.add_entry_with_button(row=14, label="Command:", variable=self.command,
+                                   bt_text="Execute", callback=self.cb_execute_command,
+                                   help="This is the command that will be executed.")
+
+        self.add_readonly_text(row=15, text=self.DESCRIPTION)
+
+        self.columnconfigure(2, weight=1)
+
+    def cb_gather_arguments(self, *args, **kwargs):
+        arguments = ['%s -i cli -t' % self.SCRIPT_NAME]
+
+    
+        archiver = self.archiver.get()
+        syslinux_disk = self.syslinux_disk.get()
+        grub_disk = self.grub_disk.get()
+        kernel_options = self.kernel_options.get()
+        archiver_options = self.archiver_options.get()
+        root = self.root.get()
+        home = self.home.get()
+        boot = self.boot.get()
+        swap = self.swap.get()
+        custom_partitions = self.custom_partitions.get()
+        mount_options = self.mount_options.get()
+        btrfs_root = self.btrfs_root.get()
+        btrfs_other = self.btrfs_other.get()
+
+
+        arguments.append("-a %s" % archiver)
+        arguments.append("-S %s" % syslinux_disk.split(": ")[0] if syslinux_disk else "")
+        arguments.append("-g %s" % grub_disk.split(": ")[0] if grub_disk else "")
+        arguments.append("-k '%s'" % kernel_options if kernel_options else "")
+        arguments.append("-U '%s'" % archiver_options if archiver_options else "")
+        arguments.append("-r %s" % root.split(": ")[0] if root else "")
+        arguments.append("-h %s" % home.split(": ")[0] if home else "")
+        arguments.append("-b %s" % boot.split(": ")[0] if boot else "")
+        arguments.append("-s %s" % swap.split(": ")[0] if swap else "")
+        arguments.append("-c '%s'" % custom_partitions if custom_partitions else "")
+        arguments.append("-m '%s'" % mount_options if mount_options else "")
+        arguments.append("-R '%s'" % btrfs_root if btrfs_root else "")
+        arguments.append("-O '%s'" % btrfs_other if btrfs_other else "")
+
+        # remove empty arguments
+        arguments = [arg.strip() for arg in arguments if arg]
+
+        self.command.set(" ".join(arguments))
+
 
 
 class STAR_GUI(ttk.Frame):
@@ -571,6 +716,7 @@ class STAR_GUI(ttk.Frame):
         # Add the tabs
         nb.add(BackupTab(nb), text="Backup", underline=0)
         nb.add(RestoreTab(nb), text="Restore", underline=0)
+        nb.add(TransferTab(nb), text="Transfer", underline=0)
 
 
 class Test(ttk.Frame, FormLayoutMixin):
