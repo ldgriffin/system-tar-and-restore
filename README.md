@@ -6,7 +6,7 @@ Table of Contents
   * [Requirements](#requirements)
   * [Things you can do](#things-you-can-do)
   * [Backup](#backup)
-  * [Restore/Transfer](#restore/transfer)
+  * [Restore/Transfer](#restoretransfer)
   * [Notes](#notes)
   * [Examples using arguments](#examples-using-arguments)
 
