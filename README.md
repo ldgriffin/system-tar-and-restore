@@ -21,11 +21,10 @@ Supported distributions: Arch, Debian/Ubuntu, Fedora, openSUSE, Gentoo, Mandriva
 
 ### DISTRIBUTION PACKAGES
 
-**Archlinux:**  
-
+**Archlinux**  
 See the [wiki page](https://wiki.archlinux.org/index.php/System-tar-and-restore).
 
-**Gentoo:**  
+**Gentoo**  
 The package is provided by the <code>gentoo-el</code> overlay. You can install it with the following commands as root. (you need to have `layman` installed and configured)
 
     layman -a gentoo-el  
