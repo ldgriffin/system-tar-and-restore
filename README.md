@@ -1,8 +1,8 @@
-Table of Contents
+System Tar & Restore
 =================
 
-  - [About](#about)
-  - [Distribution Packages](#distribution-packages)
+  * [About](#about)
+  * [Distribution Packages](#distribution-packages)
   * [Requirements](#requirements)
   * [Things you can do](#things-you-can-do)
   * [Backup](#backup)
